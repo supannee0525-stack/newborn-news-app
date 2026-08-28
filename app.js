@@ -315,7 +315,19 @@
       exportButton: document.getElementById("exportButton"),
       clearHistoryButton: document.getElementById("clearHistoryButton"),
       fillNowButton: document.getElementById("fillNowButton"),
-      toast: document.getElementById("toast")
+      toast: document.getElementById("toast"),
+      alertModal: document.getElementById("alertModal"),
+      closeAlertButton: document.getElementById("closeAlertButton"),
+      ackAlertButton: document.getElementById("ackAlertButton"),
+      modalSaveButton: document.getElementById("modalSaveButton"),
+      modalPrintButton: document.getElementById("modalPrintButton"),
+      modalScore: document.getElementById("modalScore"),
+      modalRisk: document.getElementById("modalRisk"),
+      alertTitle: document.getElementById("alertTitle"),
+      alertDescription: document.getElementById("alertDescription"),
+      modalAction: document.getElementById("modalAction"),
+      modalFrequency: document.getElementById("modalFrequency"),
+      modalAlertList: document.getElementById("modalAlertList")
     };
 
     let currentResult = null;
@@ -359,12 +371,7 @@
         showToast("กรอกข้อมูลให้ครบก่อนบันทึก");
         return;
       }
-      const record = buildRecord(currentResult);
-      const records = loadRecords();
-      records.unshift(record);
-      saveRecords(records.slice(0, 200));
-      renderHistory();
-      showToast("บันทึกผลประเมินแล้ว");
+      saveCurrentRecord();
     });
 
     ui.printButton.addEventListener("click", () => {
@@ -381,6 +388,25 @@
       saveRecords([]);
       renderHistory();
       showToast("ลบประวัติแล้ว");
+    });
+
+    ui.closeAlertButton.addEventListener("click", closeAlertPopup);
+    ui.ackAlertButton.addEventListener("click", closeAlertPopup);
+    ui.alertModal.addEventListener("click", (event) => {
+      if (event.target.hasAttribute("data-close-alert")) closeAlertPopup();
+    });
+    ui.modalSaveButton.addEventListener("click", () => {
+      if (!currentResult || !currentResult.complete) return;
+      saveCurrentRecord();
+      closeAlertPopup();
+    });
+    ui.modalPrintButton.addEventListener("click", () => {
+      if (!currentResult || !currentResult.complete) return;
+      closeAlertPopup();
+      window.setTimeout(() => window.print(), 0);
+    });
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape" && !ui.alertModal.hidden) closeAlertPopup();
     });
 
     renderEmptyResult();
@@ -407,6 +433,14 @@
 
       if (showProblemToast && !result.complete) {
         showToast(result.problems[0]?.message || "กรอกข้อมูลให้ครบก่อนคำนวณ");
+      }
+
+      if (showProblemToast && result.complete) {
+        if (result.alerts.length) {
+          openAlertPopup(result);
+        } else {
+          showToast("ไม่พบค่าผิดปกติตามตารางนี้");
+        }
       }
 
       return result;
@@ -518,6 +552,34 @@
       const ready = Boolean(currentResult && currentResult.complete);
       ui.saveButton.disabled = !ready;
       ui.printButton.disabled = !ready;
+    }
+
+    function openAlertPopup(result) {
+      const criticalCount = result.criticalAlerts.length;
+      ui.alertTitle.textContent = criticalCount ? "พบค่าอันตราย Score 3" : "พบค่าผิดปกติ";
+      ui.modalScore.textContent = result.total;
+      ui.modalRisk.textContent = result.risk.label;
+      ui.alertDescription.textContent = criticalCount
+        ? `พบค่า Score 3 จำนวน ${criticalCount} รายการ ควรเร่งประเมินและแจ้งทีมตามแนวทางหน่วยงาน`
+        : `พบค่าผิดปกติ ${result.alerts.length} รายการตาม NEWS chart`;
+      ui.modalAction.textContent = result.risk.action;
+      ui.modalFrequency.textContent = `ความถี่ประเมินซ้ำ: ${result.risk.frequency}`;
+      ui.modalAlertList.innerHTML = result.alerts.map((item) => `<li>${escapeHtml(item.message)}</li>`).join("");
+      ui.alertModal.hidden = false;
+      ui.ackAlertButton.focus();
+    }
+
+    function closeAlertPopup() {
+      ui.alertModal.hidden = true;
+    }
+
+    function saveCurrentRecord() {
+      const record = buildRecord(currentResult);
+      const records = loadRecords();
+      records.unshift(record);
+      saveRecords(records.slice(0, 200));
+      renderHistory();
+      showToast("บันทึกผลประเมินแล้ว");
     }
 
     function buildRecord(result) {

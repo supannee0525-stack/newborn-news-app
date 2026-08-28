@@ -239,6 +239,38 @@
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
+  <div class="alert-modal" id="alertModal" hidden>
+    <div class="alert-backdrop" data-close-alert></div>
+    <section class="alert-dialog" role="alertdialog" aria-modal="true" aria-labelledby="alertTitle" aria-describedby="alertDescription">
+      <div class="alert-dialog-head">
+        <div>
+          <p class="section-kicker">Alert</p>
+          <h2 id="alertTitle">พบค่าผิดปกติ</h2>
+        </div>
+        <button type="button" class="icon-button" id="closeAlertButton" aria-label="ปิด popup">×</button>
+      </div>
+      <div class="alert-dialog-body">
+        <div class="alert-score-box">
+          <span>NEWS Score</span>
+          <strong id="modalScore">--</strong>
+          <em id="modalRisk">--</em>
+        </div>
+        <p id="alertDescription">ระบบพบค่าที่ต้องเฝ้าระวังตาม NEWS chart</p>
+        <div class="modal-recommendation">
+          <strong>แนวทางตอบสนอง</strong>
+          <p id="modalAction">--</p>
+          <span id="modalFrequency">--</span>
+        </div>
+        <ul id="modalAlertList" class="modal-alert-list"></ul>
+      </div>
+      <div class="alert-dialog-actions">
+        <button type="button" class="secondary-button" id="modalSaveButton">บันทึกผลนี้</button>
+        <button type="button" class="ghost-button" id="modalPrintButton">พิมพ์ผล</button>
+        <button type="button" class="primary-button" id="ackAlertButton">รับทราบ</button>
+      </div>
+    </section>
+  </div>
+
   <script src="app.js"></script>
 </body>
 </html>

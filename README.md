@@ -24,3 +24,14 @@ python3 -m http.server 8080
 - History is stored in the browser via `localStorage`.
 - No patient data is sent to the server.
 - This is a calculation aid only. Confirm thresholds and escalation policy with the clinical unit before real clinical use.
+
+## LINE alert option
+
+Automatic LINE alerts need a small server-side endpoint plus LINE Messaging API credentials:
+
+- LINE Official Account with Messaging API enabled
+- Channel access token
+- Recipient ID, such as user ID or group ID
+- A privacy decision on what patient identifiers may be sent to LINE
+
+Do not put a LINE access token directly in browser JavaScript.

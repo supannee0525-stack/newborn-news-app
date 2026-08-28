@@ -109,6 +109,9 @@ async function main() {
           risk: document.getElementById("riskBadge").textContent.trim(),
           summary: document.getElementById("riskSummary").textContent.trim(),
           alerts: Array.from(document.querySelectorAll("#alertList li")).map((li) => li.textContent.trim()),
+          modalVisible: !document.getElementById("alertModal").hidden,
+          modalTitle: document.getElementById("alertTitle").textContent.trim(),
+          modalScore: document.getElementById("modalScore").textContent.trim(),
           historyRows: document.querySelectorAll("#historyBody tr").length,
           storedRecords: JSON.parse(localStorage.getItem("newborn-news-records-v1") || "[]").length
         });
@@ -121,6 +124,9 @@ async function main() {
   if (!value.risk.includes("High Risk")) throw new Error(`Expected High Risk, got ${value.risk}`);
   if (!value.alerts.some((text) => text.includes("HR") && text.includes("3 คะแนน"))) {
     throw new Error("Missing HR score 3 alert");
+  }
+  if (!value.modalVisible || value.modalScore !== "18" || !value.modalTitle.includes("Score 3")) {
+    throw new Error("Alert popup did not open with the high-risk result");
   }
   if (value.historyRows < 1 || value.storedRecords < 1) {
     throw new Error("History record was not saved");
