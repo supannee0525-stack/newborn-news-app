@@ -12,7 +12,7 @@
     <header class="topbar">
       <div>
         <p class="eyebrow">Neonatal Observation Tool</p>
-        <h1>Newborn Early Warning Sign Score (NEWS)</h1>
+        <h1><span class="title-full">Newborn Early Warning Sign Score (NEWS)</span><span class="title-short">Newborn NEWS</span></h1>
         <p class="lead">กรอกค่าสัญญาณชีพทารกแรกเกิด ระบบจะคำนวณคะแนน แสดงค่าที่ผิดปกติ และสรุประดับความเสี่ยงตามตารางที่แนบมา</p>
       </div>
       <div class="status-card" aria-live="polite">
@@ -236,6 +236,15 @@
       <p class="storage-note">ประวัติถูกเก็บใน browser เครื่องนี้เท่านั้น ไม่มีการส่งข้อมูลผู้ป่วยขึ้น server</p>
     </section>
   </main>
+
+  <div class="mobile-action-bar" aria-live="polite">
+    <div>
+      <span>NEWS</span>
+      <strong id="mobileScore">--</strong>
+      <em id="mobileRisk">รอข้อมูล</em>
+    </div>
+    <button type="button" class="primary-button" id="mobileCalculateButton">คำนวณ</button>
+  </div>
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 

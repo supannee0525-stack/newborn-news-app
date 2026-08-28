@@ -315,6 +315,9 @@
       exportButton: document.getElementById("exportButton"),
       clearHistoryButton: document.getElementById("clearHistoryButton"),
       fillNowButton: document.getElementById("fillNowButton"),
+      mobileScore: document.getElementById("mobileScore"),
+      mobileRisk: document.getElementById("mobileRisk"),
+      mobileCalculateButton: document.getElementById("mobileCalculateButton"),
       toast: document.getElementById("toast"),
       alertModal: document.getElementById("alertModal"),
       closeAlertButton: document.getElementById("closeAlertButton"),
@@ -364,6 +367,14 @@
     ui.fillNowButton.addEventListener("click", () => {
       fields.assessedAt.value = toDatetimeLocal(new Date());
       showToast("ใส่เวลาปัจจุบันแล้ว");
+    });
+
+    ui.mobileCalculateButton.addEventListener("click", () => {
+      if (form.requestSubmit) {
+        form.requestSubmit();
+      } else {
+        form.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
+      }
     });
 
     ui.saveButton.addEventListener("click", () => {
@@ -453,6 +464,8 @@
         const missingCount = result.problems.filter((item) => item.status === "missing").length;
         ui.headerScore.textContent = "--";
         ui.headerRisk.textContent = missingCount ? `ยังขาด ${missingCount} ช่อง` : "ตรวจข้อมูล";
+        ui.mobileScore.textContent = "--";
+        ui.mobileRisk.textContent = missingCount ? `ยังขาด ${missingCount} ช่อง` : "ตรวจข้อมูล";
         ui.totalScore.textContent = "--";
         ui.riskSummary.textContent = result.problems.map((item) => item.message).join(" / ");
         ui.riskBadge.textContent = missingCount ? "ข้อมูลยังไม่ครบ" : "ข้อมูลไม่ถูกต้อง";
@@ -470,6 +483,8 @@
       const risk = result.risk;
       ui.headerScore.textContent = result.total;
       ui.headerRisk.textContent = risk.label;
+      ui.mobileScore.textContent = result.total;
+      ui.mobileRisk.textContent = risk.label;
       ui.totalScore.textContent = result.total;
       ui.riskSummary.textContent = `คะแนนรวม ${result.total} คะแนน: ${risk.label}`;
       ui.riskBadge.textContent = risk.label;
@@ -486,6 +501,8 @@
     function renderEmptyResult() {
       ui.headerScore.textContent = "--";
       ui.headerRisk.textContent = "รอข้อมูล";
+      ui.mobileScore.textContent = "--";
+      ui.mobileRisk.textContent = "รอข้อมูล";
       ui.totalScore.textContent = "--";
       ui.riskSummary.textContent = "กรอกข้อมูลให้ครบเพื่อประเมินระดับความเสี่ยง";
       ui.riskBadge.textContent = "รอข้อมูล";
