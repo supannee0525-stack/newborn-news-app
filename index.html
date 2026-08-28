@@ -1,0 +1,244 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Newborn Early Warning Sign Score (NEWS)</title>
+  <meta name="description" content="เว็บแอปคำนวณ Newborn Early Warning Sign Score พร้อมแจ้งเตือนค่าผิดปกติและบันทึกประวัติในเครื่อง">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="app-shell">
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">Neonatal Observation Tool</p>
+        <h1>Newborn Early Warning Sign Score (NEWS)</h1>
+        <p class="lead">กรอกค่าสัญญาณชีพทารกแรกเกิด ระบบจะคำนวณคะแนน แสดงค่าที่ผิดปกติ และสรุประดับความเสี่ยงตามตารางที่แนบมา</p>
+      </div>
+      <div class="status-card" aria-live="polite">
+        <span class="status-label">คะแนนรวม</span>
+        <strong id="headerScore">--</strong>
+        <span id="headerRisk">รอข้อมูล</span>
+      </div>
+    </header>
+
+    <section class="clinical-note" role="note">
+      <strong>หมายเหตุ:</strong>
+      เครื่องมือนี้เป็นตัวช่วยคำนวณและบันทึก ไม่ใช่คำสั่งรักษา ให้ทวนเกณฑ์กับแนวทางของหน่วยงานก่อนนำไปใช้จริง โดยเฉพาะเคสที่มี apnea, gasping, grunting, cyanosis, ชัก หรือไม่ตอบสนอง
+    </section>
+
+    <div class="workspace">
+      <section class="panel form-panel" aria-labelledby="formTitle">
+        <div class="panel-head">
+          <div>
+            <p class="section-kicker">Assessment</p>
+            <h2 id="formTitle">ข้อมูลประเมิน</h2>
+          </div>
+          <button type="button" class="ghost-button" id="fillNowButton">เวลา ณ ตอนนี้</button>
+        </div>
+
+        <form id="newsForm" novalidate>
+          <fieldset class="patient-grid">
+            <legend>ข้อมูลผู้ป่วย</legend>
+            <label>
+              ชื่อ / รหัสเตียง
+              <input id="patientName" name="patientName" type="text" autocomplete="off" placeholder="เช่น Baby A หรือ Bed 3">
+            </label>
+            <label>
+              HN
+              <input id="hn" name="hn" type="text" autocomplete="off" placeholder="ไม่บังคับ">
+            </label>
+            <label>
+              อายุครรภ์
+              <input id="gestAge" name="gestAge" type="text" autocomplete="off" placeholder="เช่น 38+2 wk">
+            </label>
+            <label>
+              วันที่/เวลา
+              <input id="assessedAt" name="assessedAt" type="datetime-local">
+            </label>
+          </fieldset>
+
+          <fieldset>
+            <legend>ค่าสัญญาณชีพ</legend>
+            <div class="vital-grid">
+              <label class="vital-field">
+                <span>BT <small>°C</small></span>
+                <input id="bt" name="bt" type="number" inputmode="decimal" min="25" max="45" step="0.1" placeholder="36.8" required>
+                <output class="score-pill pending" id="btScore">รอข้อมูล</output>
+              </label>
+              <label class="vital-field">
+                <span>HR <small>/min</small></span>
+                <input id="hr" name="hr" type="number" inputmode="numeric" min="0" max="320" step="1" placeholder="140" required>
+                <output class="score-pill pending" id="hrScore">รอข้อมูล</output>
+              </label>
+              <label class="vital-field">
+                <span>RR <small>/min</small></span>
+                <input id="rr" name="rr" type="number" inputmode="numeric" min="0" max="180" step="1" placeholder="48" required>
+                <output class="score-pill pending" id="rrScore">รอข้อมูล</output>
+              </label>
+              <label class="vital-field">
+                <span>SpO2 <small>%</small></span>
+                <input id="spo2" name="spo2" type="number" inputmode="decimal" min="0" max="100" step="1" placeholder="98" required>
+                <output class="score-pill pending" id="spo2Score">รอข้อมูล</output>
+              </label>
+            </div>
+          </fieldset>
+
+          <fieldset>
+            <legend>อาการร่วม</legend>
+            <div class="select-grid">
+              <label>
+                ลักษณะการหายใจ
+                <select id="breathing" name="breathing" required>
+                  <option value="">เลือกอาการ</option>
+                  <option value="normal">Normal</option>
+                  <option value="tachypnea">Tachypnea</option>
+                  <option value="mild-retraction-flaring">Mild Retraction / Flaring</option>
+                  <option value="moderate-retraction">Moderate Retraction</option>
+                  <option value="severe-retraction">Severe Retraction</option>
+                  <option value="grunting">Grunting</option>
+                  <option value="apnea-gasping">Apnea / Gasping</option>
+                </select>
+                <output class="score-pill pending" id="breathingScore">รอข้อมูล</output>
+              </label>
+              <label>
+                สีผิว / ความรู้สึกตัว
+                <select id="neuroColor" name="neuroColor" required>
+                  <option value="">เลือกอาการ</option>
+                  <option value="pink-alert">ชมพู / ตื่นตัว</option>
+                  <option value="irritable">หงุดหงิด (Irritable)</option>
+                  <option value="mottled-drowsy-unwell">Mottled / ซึม / ดูไม่ดี</option>
+                  <option value="restless">กระสับกระส่าย</option>
+                  <option value="cyanosis">เขียว (Cyanosis)</option>
+                  <option value="pale">ซีด (Pale)</option>
+                  <option value="seizure-unresponsive">ชัก / ไม่ตอบสนอง</option>
+                </select>
+                <output class="score-pill pending" id="neuroColorScore">รอข้อมูล</output>
+              </label>
+            </div>
+          </fieldset>
+
+          <div class="actions">
+            <button type="submit" class="primary-button">คำนวณคะแนน</button>
+            <button type="button" class="secondary-button" id="saveButton" disabled>บันทึกครั้งนี้</button>
+            <button type="button" class="ghost-button" id="printButton" disabled>พิมพ์ผล</button>
+            <button type="reset" class="ghost-button">ล้างฟอร์ม</button>
+          </div>
+        </form>
+      </section>
+
+      <section class="panel result-panel" aria-labelledby="resultTitle">
+        <div class="panel-head">
+          <div>
+            <p class="section-kicker">Result</p>
+            <h2 id="resultTitle">ผลประเมิน</h2>
+          </div>
+          <span class="risk-badge waiting" id="riskBadge">รอข้อมูล</span>
+        </div>
+
+        <div class="score-display">
+          <div>
+            <span>NEWS Score</span>
+            <strong id="totalScore">--</strong>
+          </div>
+          <p id="riskSummary">กรอกข้อมูลให้ครบเพื่อประเมินระดับความเสี่ยง</p>
+        </div>
+
+        <div class="recommendation" id="recommendation">
+          <h3>แนวทางตอบสนอง</h3>
+          <p>ระบบจะแสดงคำแนะนำหลังคำนวณคะแนน</p>
+          <span>ความถี่ประเมินซ้ำ: --</span>
+        </div>
+
+        <div class="alerts">
+          <h3>แจ้งเตือนค่าผิดปกติ</h3>
+          <ul id="alertList">
+            <li class="muted">ยังไม่มีข้อมูลผิดปกติ</li>
+          </ul>
+        </div>
+
+        <div class="breakdown">
+          <h3>รายละเอียดคะแนน</h3>
+          <div id="breakdownList" class="breakdown-list">
+            <p class="muted">ยังไม่ได้คำนวณ</p>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <section class="panel guide-panel" aria-labelledby="guideTitle">
+      <div class="panel-head">
+        <div>
+          <p class="section-kicker">Reference</p>
+          <h2 id="guideTitle">เกณฑ์แปลผลคะแนนรวม</h2>
+        </div>
+      </div>
+      <div class="risk-guide">
+        <div class="guide-row normal">
+          <strong>0-2</strong>
+          <span>ปกติ (Normal)</span>
+          <p>ดูแลตามปกติ ประเมินตามแผนการรักษา</p>
+          <em>ทุก 4-8 ชั่วโมง</em>
+        </div>
+        <div class="guide-row low">
+          <strong>3-4</strong>
+          <span>เฝ้าระวัง (Low Risk)</span>
+          <p>แจ้งพยาบาลผู้รับผิดชอบ บันทึกและติดตามอาการ</p>
+          <em>ทุก 2-4 ชั่วโมง</em>
+        </div>
+        <div class="guide-row medium">
+          <strong>5-6</strong>
+          <span>ความเสี่ยงปานกลาง (Medium Risk)</span>
+          <p>แจ้งแพทย์ทันที เพิ่มการติดตามอาการ พิจารณาย้าย NICU</p>
+          <em>ทุก 1-2 ชั่วโมง</em>
+        </div>
+        <div class="guide-row high">
+          <strong>≥ 7</strong>
+          <span>ความเสี่ยงสูง (High Risk)</span>
+          <p>แจ้งแพทย์/ทีมฉุกเฉินทันที เตรียม Resuscitation พิจารณาย้าย NICU</p>
+          <em>ต่อเนื่อง / Continuous Monitoring</em>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel history-panel" aria-labelledby="historyTitle">
+      <div class="panel-head">
+        <div>
+          <p class="section-kicker">Tracking</p>
+          <h2 id="historyTitle">ประวัติการติดตาม</h2>
+        </div>
+        <div class="history-actions">
+          <button type="button" class="ghost-button" id="exportButton" disabled>ส่งออก CSV</button>
+          <button type="button" class="ghost-button danger" id="clearHistoryButton" disabled>ลบประวัติ</button>
+        </div>
+      </div>
+      <div class="history-table-wrap">
+        <table class="history-table">
+          <thead>
+            <tr>
+              <th>เวลา</th>
+              <th>ผู้ป่วย</th>
+              <th>BT</th>
+              <th>HR</th>
+              <th>RR</th>
+              <th>SpO2</th>
+              <th>Score</th>
+              <th>ผลประเมิน</th>
+            </tr>
+          </thead>
+          <tbody id="historyBody">
+            <tr>
+              <td colspan="8" class="empty-row">ยังไม่มีประวัติที่บันทึก</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="storage-note">ประวัติถูกเก็บใน browser เครื่องนี้เท่านั้น ไม่มีการส่งข้อมูลผู้ป่วยขึ้น server</p>
+    </section>
+  </main>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
