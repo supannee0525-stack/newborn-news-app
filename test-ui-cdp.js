@@ -3,7 +3,7 @@
 const fs = require("fs");
 
 const port = process.env.CDP_PORT || "9333";
-const screenshotPath = process.env.SCREENSHOT_PATH || "/root/shots/newborn-news/high-risk-result.png";
+const screenshotPath = process.env.SCREENSHOT_PATH || "/root/shots/newborn-news/alert-threshold-result.png";
 
 async function waitForTab() {
   const endpoint = `http://127.0.0.1:${port}/json/list`;
@@ -72,38 +72,28 @@ async function main() {
   const result = await cdp.send("Runtime.evaluate", {
     awaitPromise: true,
     returnByValue: true,
-    expression: `(() => {
+    expression: `(async () => {
       if (!window.NewbornNEWS) return { total: "--", risk: "missing app", alerts: [] };
+      localStorage.removeItem("newborn-news-records-v1");
       const set = (id, value) => {
         const el = document.getElementById(id);
         el.value = value;
         el.dispatchEvent(new Event("input", { bubbles: true }));
         el.dispatchEvent(new Event("change", { bubbles: true }));
       };
-      set("patientName", "Baby Test");
-      set("hn", "HN001");
-      set("gestAge", "38+2 wk");
-      set("bt", "39.2");
-      set("hr", "205");
-      set("rr", "91");
-      set("spo2", "84");
-      set("breathing", "grunting");
-      set("neuroColor", "pale");
-      document.querySelector(".primary-button").click();
-      return new Promise((resolve) => window.setTimeout(() => {
-        document.getElementById("saveButton").click();
-        const calculated = window.NewbornNEWS.calculateNEWS({
-          bt: "39.2",
-          hr: "205",
-          rr: "91",
-          spo2: "84",
-          breathing: "grunting",
-          neuroColor: "pale"
-        });
-        resolve({
-          hasApp: Boolean(window.NewbornNEWS),
+      const wait = (ms) => new Promise((resolve) => window.setTimeout(resolve, ms));
+      const fillAssessment = (input) => {
+        Object.entries(input).forEach(([id, value]) => set(id, value));
+      };
+      const submitAssessment = async (input) => {
+        fillAssessment(input);
+        document.querySelector(".primary-button").click();
+        await wait(160);
+        const calculated = window.NewbornNEWS.calculateNEWS(input);
+        return {
           formulaTotal: calculated.total,
           formulaRisk: calculated.risk?.label,
+          escalation: window.NewbornNEWS.isEscalationRisk(calculated),
           total: document.getElementById("totalScore").textContent.trim(),
           header: document.getElementById("headerScore").textContent.trim(),
           risk: document.getElementById("riskBadge").textContent.trim(),
@@ -111,24 +101,89 @@ async function main() {
           alerts: Array.from(document.querySelectorAll("#alertList li")).map((li) => li.textContent.trim()),
           modalVisible: !document.getElementById("alertModal").hidden,
           modalTitle: document.getElementById("alertTitle").textContent.trim(),
-          modalScore: document.getElementById("modalScore").textContent.trim(),
-          historyRows: document.querySelectorAll("#historyBody tr").length,
-          storedRecords: JSON.parse(localStorage.getItem("newborn-news-records-v1") || "[]").length
-        });
-      }, 120));
+          modalDescription: document.getElementById("alertDescription").textContent.trim(),
+          modalScore: document.getElementById("modalScore").textContent.trim()
+        };
+      };
+      set("patientName", "Baby Test");
+      set("hn", "HN001");
+      set("gestAge", "38+2 wk");
+      set("assessedAt", "2026-08-28T12:00");
+
+      const lowInput = {
+        bt: "37.8",
+        hr: "170",
+        rr: "70",
+        spo2: "98",
+        breathing: "normal",
+        neuroColor: "pink-alert"
+      };
+      const low = await submitAssessment(lowInput);
+
+      const mediumInput = {
+        bt: "38.5",
+        hr: "190",
+        rr: "50",
+        spo2: "98",
+        breathing: "tachypnea",
+        neuroColor: "pink-alert"
+      };
+      const medium = await submitAssessment(mediumInput);
+      document.getElementById("ackAlertButton").click();
+      await wait(80);
+
+      const highInput = {
+        bt: "39.2",
+        hr: "205",
+        rr: "91",
+        spo2: "84",
+        breathing: "grunting",
+        neuroColor: "pale"
+      };
+      const high = await submitAssessment(highInput);
+      document.getElementById("saveButton").click();
+      await wait(80);
+      high.historyRows = document.querySelectorAll("#historyBody tr").length;
+      high.storedRecords = JSON.parse(localStorage.getItem("newborn-news-records-v1") || "[]").length;
+
+      return {
+        hasApp: Boolean(window.NewbornNEWS),
+        low,
+        medium,
+        high
+      };
     })()`
   });
 
   const value = result.result.value;
-  if (value.total !== "18") throw new Error(`Expected total 18, got ${value.total}`);
-  if (!value.risk.includes("High Risk")) throw new Error(`Expected High Risk, got ${value.risk}`);
-  if (!value.alerts.some((text) => text.includes("HR") && text.includes("3 คะแนน"))) {
+  if (!value.hasApp) throw new Error("NewbornNEWS app object was not available");
+  if (value.low.total !== "3" || !value.low.risk.includes("Low Risk")) {
+    throw new Error(`Expected Low Risk total 3, got ${value.low.total} / ${value.low.risk}`);
+  }
+  if (value.low.escalation || value.low.modalVisible) {
+    throw new Error("Low Risk should not open the urgent alert popup");
+  }
+  if (value.medium.total !== "5" || !value.medium.risk.includes("Medium Risk")) {
+    throw new Error(`Expected Medium Risk total 5, got ${value.medium.total} / ${value.medium.risk}`);
+  }
+  if (!value.medium.escalation || !value.medium.modalVisible || !value.medium.modalTitle.includes("เสี่ยงปานกลาง")) {
+    throw new Error("Medium Risk did not open the urgent staff alert popup");
+  }
+  if (!value.medium.modalDescription.includes("เจ้าหน้าที่เกี่ยวข้องทันที")) {
+    throw new Error("Medium Risk popup did not tell staff to alert immediately");
+  }
+  if (value.high.total !== "18") throw new Error(`Expected total 18, got ${value.high.total}`);
+  if (!value.high.risk.includes("High Risk")) throw new Error(`Expected High Risk, got ${value.high.risk}`);
+  if (!value.high.alerts.some((text) => text.includes("HR") && text.includes("3 คะแนน"))) {
     throw new Error("Missing HR score 3 alert");
   }
-  if (!value.modalVisible || value.modalScore !== "18" || !value.modalTitle.includes("Score 3")) {
+  if (!value.high.escalation || !value.high.modalVisible || value.high.modalScore !== "18" || !value.high.modalTitle.includes("เสี่ยงสูง")) {
     throw new Error("Alert popup did not open with the high-risk result");
   }
-  if (value.historyRows < 1 || value.storedRecords < 1) {
+  if (!value.high.modalDescription.includes("ทีมฉุกเฉิน") || !value.high.modalDescription.includes("ทันที")) {
+    throw new Error("High Risk popup did not include immediate emergency-team wording");
+  }
+  if (value.high.historyRows < 1 || value.high.storedRecords < 1) {
     throw new Error("History record was not saved");
   }
 

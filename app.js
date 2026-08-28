@@ -259,6 +259,35 @@
     };
   }
 
+  function isEscalationRisk(result) {
+    return Boolean(result?.complete && (result.risk?.key === "medium" || result.risk?.key === "high"));
+  }
+
+  function getEscalationCopy(result) {
+    const criticalText = result.criticalAlerts.length
+      ? ` และมีค่า Score 3 จำนวน ${result.criticalAlerts.length} รายการ`
+      : "";
+
+    if (result.risk.key === "high") {
+      return {
+        title: "เสี่ยงสูง: แจ้งทีมทันที",
+        description: `คะแนนรวม ${result.total} คะแนน เข้าเกณฑ์เสี่ยงสูง ต้องแจ้งแพทย์/ทีมฉุกเฉินและเจ้าหน้าที่เกี่ยวข้องทันที${criticalText}`
+      };
+    }
+
+    if (result.risk.key === "medium") {
+      return {
+        title: "เสี่ยงปานกลาง: แจ้งเจ้าหน้าที่ทันที",
+        description: `คะแนนรวม ${result.total} คะแนน เข้าเกณฑ์เสี่ยงปานกลาง ต้องแจ้งแพทย์และเจ้าหน้าที่เกี่ยวข้องทันที${criticalText}`
+      };
+    }
+
+    return {
+      title: "พบค่าผิดปกติ",
+      description: `คะแนนรวม ${result.total} คะแนน: ${result.risk.label}`
+    };
+  }
+
   function pad(value) {
     return String(value).padStart(2, "0");
   }
@@ -442,14 +471,22 @@
       renderResult(result);
       updateButtons();
 
+      if (!showProblemToast && !ui.alertModal.hidden) {
+        closeAlertPopup();
+      }
+
       if (showProblemToast && !result.complete) {
         showToast(result.problems[0]?.message || "กรอกข้อมูลให้ครบก่อนคำนวณ");
       }
 
       if (showProblemToast && result.complete) {
-        if (result.alerts.length) {
+        if (isEscalationRisk(result)) {
           openAlertPopup(result);
+        } else if (result.alerts.length) {
+          closeAlertPopup();
+          showToast("แสดงผลแล้ว: ยังไม่เข้าเกณฑ์ Alert เร่งด่วน");
         } else {
+          closeAlertPopup();
           showToast("ไม่พบค่าผิดปกติตามตารางนี้");
         }
       }
@@ -494,7 +531,7 @@
         <p>${risk.action}</p>
         <span>ความถี่ประเมินซ้ำ: ${risk.frequency}</span>
       `;
-      renderAlerts(result.alerts, result.criticalAlerts);
+      renderAlerts(result);
       renderBreakdown(result.details);
     }
 
@@ -533,7 +570,10 @@
       pill.className = `score-pill score-${detail.score}`;
     }
 
-    function renderAlerts(alerts, criticalAlerts) {
+    function renderAlerts(result) {
+      const alerts = result.alerts;
+      const criticalAlerts = result.criticalAlerts;
+
       if (!alerts.length) {
         ui.alertList.innerHTML = `<li class="muted">ไม่พบค่าผิดปกติตามตารางนี้</li>`;
         return;
@@ -544,8 +584,10 @@
         return `<li class="${className}">${escapeHtml(item.message)}</li>`;
       });
 
-      if (criticalAlerts.length) {
-        items.unshift(`<li class="alert-high">พบค่า Score 3 อย่างน้อย ${criticalAlerts.length} รายการ ควรเร่งประเมินและ escalate ตามแนวทางหน่วยงาน</li>`);
+      if (isEscalationRisk(result)) {
+        items.unshift(`<li class="alert-high">${escapeHtml(getEscalationCopy(result).description)}</li>`);
+      } else if (criticalAlerts.length) {
+        items.unshift(`<li class="alert-high">พบค่า Score 3 อย่างน้อย ${criticalAlerts.length} รายการ ควรทวนค่าและติดตามใกล้ชิดตามแนวทางหน่วยงาน</li>`);
       }
 
       ui.alertList.innerHTML = items.join("");
@@ -572,13 +614,11 @@
     }
 
     function openAlertPopup(result) {
-      const criticalCount = result.criticalAlerts.length;
-      ui.alertTitle.textContent = criticalCount ? "พบค่าอันตราย Score 3" : "พบค่าผิดปกติ";
+      const escalationCopy = getEscalationCopy(result);
+      ui.alertTitle.textContent = escalationCopy.title;
       ui.modalScore.textContent = result.total;
       ui.modalRisk.textContent = result.risk.label;
-      ui.alertDescription.textContent = criticalCount
-        ? `พบค่า Score 3 จำนวน ${criticalCount} รายการ ควรเร่งประเมินและแจ้งทีมตามแนวทางหน่วยงาน`
-        : `พบค่าผิดปกติ ${result.alerts.length} รายการตาม NEWS chart`;
+      ui.alertDescription.textContent = escalationCopy.description;
       ui.modalAction.textContent = result.risk.action;
       ui.modalFrequency.textContent = `ความถี่ประเมินซ้ำ: ${result.risk.frequency}`;
       ui.modalAlertList.innerHTML = result.alerts.map((item) => `<li>${escapeHtml(item.message)}</li>`).join("");
@@ -741,6 +781,7 @@
     RISK_LEVELS,
     calculateNEWS,
     getRisk,
+    isEscalationRisk,
     scoreNumeric,
     scoreSelect
   };
