@@ -27,6 +27,21 @@
       เครื่องมือนี้เป็นตัวช่วยคำนวณและบันทึก ไม่ใช่คำสั่งรักษา ให้ทวนเกณฑ์กับแนวทางของหน่วยงานก่อนนำไปใช้จริง โดยเฉพาะเคสที่มี apnea, gasping, grunting, cyanosis, ชัก หรือไม่ตอบสนอง
     </section>
 
+    <section class="notification-toolbar" aria-label="การตั้งค่าแจ้งเตือนหน้าจอ">
+      <div class="notification-status-group">
+        <span class="notification-icon" aria-hidden="true">🔔</span>
+        <div>
+          <strong id="notificationStatusText">ระบบแจ้งเตือนหน้าจอ (Screen Notification & Sound)</strong>
+          <p id="notificationStatusSub" class="notification-sub">คลิกเพื่อเปิดรับการแจ้งเตือนบนหน้าจอ (OS / Browser) และเสียงเตือนเมื่อพบความเสี่ยง</p>
+        </div>
+      </div>
+      <div class="notification-action-group">
+        <button type="button" class="notif-btn" id="toggleNotifPermissionBtn">🔔 เปิดแจ้งเตือนหน้าจอ</button>
+        <button type="button" class="notif-btn active" id="toggleSoundBtn" aria-pressed="true">🔊 เปิดเสียงเตือน</button>
+        <button type="button" class="notif-btn ghost" id="testAlertBtn">⚡ ทดสอบเตือน</button>
+      </div>
+    </section>
+
     <div class="workspace">
       <section class="panel form-panel" aria-labelledby="formTitle">
         <div class="panel-head">

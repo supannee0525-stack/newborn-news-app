@@ -3,6 +3,7 @@
 
   const STORAGE_KEY = "newborn-news-records-v1";
   const ALERT_KEY_STORAGE_KEY = "newborn-news-alert-key";
+  const NOTIF_SOUND_STORAGE_KEY = "newborn-news-sound-enabled";
 
   const RISK_LEVELS = [
     {
@@ -315,6 +316,99 @@
     return text;
   }
 
+  let audioCtx = null;
+
+  function getAudioContext() {
+    if (!audioCtx) {
+      const AudioContextClass = global.AudioContext || global.webkitAudioContext;
+      if (AudioContextClass) {
+        audioCtx = new AudioContextClass();
+      }
+    }
+    if (audioCtx && audioCtx.state === "suspended") {
+      audioCtx.resume().catch(() => {});
+    }
+    return audioCtx;
+  }
+
+  function playAlertSound(riskKey, soundEnabled) {
+    if (!soundEnabled) return;
+    try {
+      const ctx = getAudioContext();
+      if (!ctx) return;
+
+      const now = ctx.currentTime;
+      if (riskKey === "high") {
+        const tones = [880, 1046.5, 880];
+        tones.forEach((freq, idx) => {
+          const offset = idx * 0.16;
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = "sine";
+          osc.frequency.setValueAtTime(freq, now + offset);
+          gain.gain.setValueAtTime(0.3, now + offset);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + offset + 0.13);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(now + offset);
+          osc.stop(now + offset + 0.13);
+        });
+      } else if (riskKey === "medium") {
+        const tones = [659.25, 880];
+        tones.forEach((freq, idx) => {
+          const offset = idx * 0.18;
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = "sine";
+          osc.frequency.setValueAtTime(freq, now + offset);
+          gain.gain.setValueAtTime(0.2, now + offset);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + offset + 0.16);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(now + offset);
+          osc.stop(now + offset + 0.16);
+        });
+      }
+    } catch (error) {
+      console.warn("Audio alert error:", error);
+    }
+  }
+
+  function triggerVibration(riskKey) {
+    if (typeof navigator === "undefined" || !("vibrate" in navigator)) return;
+    try {
+      if (riskKey === "high") {
+        navigator.vibrate([250, 100, 250, 100, 350]);
+      } else if (riskKey === "medium") {
+        navigator.vibrate([200, 100, 200]);
+      }
+    } catch (err) {
+      // Ignore vibration error
+    }
+  }
+
+  function sendSystemNotification({ title, body, tag, requireInteraction = false, onClick = null }) {
+    if (typeof window === "undefined" || !("Notification" in window) || Notification.permission !== "granted") {
+      return null;
+    }
+    try {
+      const notif = new Notification(title, {
+        body,
+        tag: tag || "newborn-news-alert",
+        requireInteraction: Boolean(requireInteraction)
+      });
+      notif.onclick = function () {
+        if (typeof window.focus === "function") window.focus();
+        if (typeof onClick === "function") onClick();
+        notif.close();
+      };
+      return notif;
+    } catch (error) {
+      console.warn("Could not dispatch system notification:", error);
+      return null;
+    }
+  }
+
   function initializeApp() {
     const form = document.getElementById("newsForm");
     const fields = {
@@ -365,9 +459,15 @@
       alertDescription: document.getElementById("alertDescription"),
       modalAction: document.getElementById("modalAction"),
       modalFrequency: document.getElementById("modalFrequency"),
-      modalAlertList: document.getElementById("modalAlertList")
+      modalAlertList: document.getElementById("modalAlertList"),
+      toggleNotifPermissionBtn: document.getElementById("toggleNotifPermissionBtn"),
+      toggleSoundBtn: document.getElementById("toggleSoundBtn"),
+      testAlertBtn: document.getElementById("testAlertBtn"),
+      notificationStatusText: document.getElementById("notificationStatusText"),
+      notificationStatusSub: document.getElementById("notificationStatusSub")
     };
 
+    let soundEnabled = localStorage.getItem(NOTIF_SOUND_STORAGE_KEY) !== "false";
     let currentResult = null;
     let toastTimer = null;
     let teamAlertConfig = {
@@ -468,6 +568,113 @@
       if (event.key === "Escape" && !ui.alertModal.hidden) closeAlertPopup();
     });
 
+    function updateNotificationUI() {
+      if (!ui.toggleNotifPermissionBtn || !ui.notificationStatusSub) return;
+
+      if (typeof window === "undefined" || !("Notification" in window)) {
+        ui.toggleNotifPermissionBtn.textContent = "🔔 ไม่รองรับ OS Notification";
+        ui.toggleNotifPermissionBtn.className = "notif-btn muted-state";
+        ui.toggleNotifPermissionBtn.disabled = true;
+        ui.notificationStatusSub.textContent = "บราวเซอร์นี้ไม่รองรับ Web Notification API (แต่ยังใช้ Alert Banner และเสียงเตือนได้)";
+        return;
+      }
+
+      const permission = Notification.permission;
+      if (permission === "granted") {
+        ui.toggleNotifPermissionBtn.textContent = "✅ เปิดแจ้งเตือนหน้าจอแล้ว";
+        ui.toggleNotifPermissionBtn.className = "notif-btn active";
+        ui.notificationStatusSub.textContent = "ระบบจะเด้ง Notification บนหน้าจอของเครื่องและเปิด Banner เมื่อพบความเสี่ยง Medium / High";
+      } else if (permission === "denied") {
+        ui.toggleNotifPermissionBtn.textContent = "❌ บราวเซอร์ปิดกั้นแจ้งเตือน";
+        ui.toggleNotifPermissionBtn.className = "notif-btn muted-state";
+        ui.notificationStatusSub.textContent = "โปรดอนุญาตการแจ้งเตือนในการตั้งค่าบราวเซอร์เพื่อรับการแจ้งเตือนบนหน้าจอ";
+      } else {
+        ui.toggleNotifPermissionBtn.textContent = "🔔 เปิดแจ้งเตือนหน้าจอ";
+        ui.toggleNotifPermissionBtn.className = "notif-btn";
+        ui.notificationStatusSub.textContent = "คลิกเพื่ออนุญาตให้ระบบเด้งแจ้งเตือนบนหน้าจอ (OS / Browser Notification)";
+      }
+    }
+
+    function updateSoundUI() {
+      if (!ui.toggleSoundBtn) return;
+      if (soundEnabled) {
+        ui.toggleSoundBtn.textContent = "🔊 เปิดเสียงเตือน";
+        ui.toggleSoundBtn.className = "notif-btn active";
+        ui.toggleSoundBtn.setAttribute("aria-pressed", "true");
+      } else {
+        ui.toggleSoundBtn.textContent = "🔇 ปิดเสียงเตือน";
+        ui.toggleSoundBtn.className = "notif-btn muted-state";
+        ui.toggleSoundBtn.setAttribute("aria-pressed", "false");
+      }
+    }
+
+    async function handleRequestPermission() {
+      if (typeof window === "undefined" || !("Notification" in window)) {
+        showToast("บราวเซอร์นี้ไม่รองรับ System Notification");
+        return;
+      }
+      try {
+        const permission = await Notification.requestPermission();
+        updateNotificationUI();
+        if (permission === "granted") {
+          showToast("เปิดการแจ้งเตือนหน้าจอเรียบร้อยแล้ว");
+          sendSystemNotification({
+            title: "Newborn NEWS: ระบบแจ้งเตือนพร้อมใช้งาน",
+            body: "จะมีการแจ้งเตือนบนหน้าจอเมื่อพบผู้ป่วยมีความเสี่ยง Medium หรือ High Risk",
+            tag: "newborn-news-setup-ok"
+          });
+        } else if (permission === "denied") {
+          showToast("บราวเซอร์ถูกตั้งค่าปิดกั้นการแจ้งเตือน");
+        }
+      } catch (err) {
+        console.warn("Permission request error:", err);
+      }
+    }
+
+    if (ui.toggleNotifPermissionBtn) {
+      ui.toggleNotifPermissionBtn.addEventListener("click", handleRequestPermission);
+    }
+
+    if (ui.toggleSoundBtn) {
+      ui.toggleSoundBtn.addEventListener("click", () => {
+        soundEnabled = !soundEnabled;
+        localStorage.setItem(NOTIF_SOUND_STORAGE_KEY, String(soundEnabled));
+        updateSoundUI();
+        showToast(soundEnabled ? "เปิดเสียงสัญญาณเตือนแล้ว" : "ปิดเสียงสัญญาณเตือนแล้ว");
+        if (soundEnabled) {
+          playAlertSound("medium", true);
+        }
+      });
+    }
+
+    if (ui.testAlertBtn) {
+      ui.testAlertBtn.addEventListener("click", () => {
+        getAudioContext();
+        const mockTestResult = {
+          complete: true,
+          total: 8,
+          risk: RISK_LEVELS[3],
+          alerts: [
+            { score: 3, message: "HR > 200: 3 คะแนน" },
+            { score: 3, message: "SpO2 < 85: 3 คะแนน" },
+            { score: 2, message: "BT 38.1-38.9: 2 คะแนน" }
+          ],
+          criticalAlerts: [
+            { score: 3, message: "HR > 200: 3 คะแนน" },
+            { score: 3, message: "SpO2 < 85: 3 คะแนน" }
+          ],
+          details: []
+        };
+        showAlertBanner(mockTestResult);
+        showToast("ทดสอบแจ้งเตือนหน้าจอ (Banner + Sound + System Notification)");
+        if (typeof window !== "undefined" && "Notification" in window && Notification.permission === "default") {
+          handleRequestPermission();
+        }
+      });
+    }
+
+    updateNotificationUI();
+    updateSoundUI();
     renderEmptyResult();
 
     function getInput() {
@@ -759,6 +966,16 @@
       ui.alertBanner.hidden = false;
       window.requestAnimationFrame(() => {
         ui.alertBanner.classList.add("show");
+      });
+
+      playAlertSound(result.risk.key, soundEnabled);
+      triggerVibration(result.risk.key);
+      sendSystemNotification({
+        title: `⚠️ Newborn NEWS: ${result.risk.label} (${result.total} คะแนน)`,
+        body: `${patientText}: ${alertText}`,
+        tag: `newborn-news-${patientText}-${result.risk.key}`,
+        requireInteraction: result.risk.key === "high",
+        onClick: () => openAlertPopup(result)
       });
     }
 
