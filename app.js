@@ -392,19 +392,25 @@
       return null;
     }
 
-    // 1. Try Service Worker first (Essential for mobile browsers and background notifications)
+    const iconUrl = new URL("icon-192.png", window.location.href).href;
+    const badgeUrl = new URL("icon-192.png", window.location.href).href;
+
+    const options = {
+      body,
+      icon: iconUrl,
+      badge: badgeUrl,
+      tag: tag || "newborn-news-alert",
+      requireInteraction: Boolean(requireInteraction),
+      vibrate: requireInteraction ? [250, 100, 250, 100, 350] : [200, 100, 200],
+      data: data || null
+    };
+
+    // 1. Try Service Worker first (Essential for mobile lockscreen notifications)
     if ("serviceWorker" in navigator) {
       try {
         const reg = await navigator.serviceWorker.ready;
         if (reg && typeof reg.showNotification === "function") {
-          await reg.showNotification(title, {
-            body,
-            icon: "icon-192.png",
-            badge: "icon-192.png",
-            tag: tag || "newborn-news-alert",
-            requireInteraction: Boolean(requireInteraction),
-            data: data || null
-          });
+          await reg.showNotification(title, options);
           return true;
         }
       } catch (swErr) {
@@ -412,16 +418,9 @@
       }
     }
 
-    // 2. Fallback to standard window.Notification (Desktop / direct tab)
+    // 2. Fallback to direct Notification constructor (Desktop / direct tab)
     try {
-      const notif = new Notification(title, {
-        body,
-        icon: "icon-192.png",
-        badge: "icon-192.png",
-        tag: tag || "newborn-news-alert",
-        requireInteraction: Boolean(requireInteraction),
-        data: data || null
-      });
+      const notif = new Notification(title, options);
       notif.onclick = function () {
         if (typeof window.focus === "function") window.focus();
         if (typeof onClick === "function") onClick();
@@ -719,7 +718,7 @@
           details: []
         };
         showAlertBanner(mockTestResult);
-        showToast("ทดสอบแจ้งเตือนหน้าจอ (Banner + Sound + System Notification)");
+        showToast("ส่งการแจ้งเตือนเข้า Lock Screen และหน้าจอแล้ว");
         if (typeof window !== "undefined" && "Notification" in window && Notification.permission === "default") {
           handleRequestPermission();
         }
@@ -1023,11 +1022,19 @@
 
       playAlertSound(result.risk.key, soundEnabled);
       triggerVibration(result.risk.key);
+
+      const notifTitle = result.risk.key === "high"
+        ? `🚨 เสี่ยงสูง NEWS ${result.total}: ${patientText}`
+        : `⚠️ เสี่ยงปานกลาง NEWS ${result.total}: ${patientText}`;
+
+      const notifBody = `${alertText} • ${result.risk.action}`;
+
       sendSystemNotification({
-        title: `⚠️ Newborn NEWS: ${result.risk.label} (${result.total} คะแนน)`,
-        body: `${patientText}: ${alertText}`,
+        title: notifTitle,
+        body: notifBody,
         tag: `newborn-news-${patientText}-${result.risk.key}`,
         requireInteraction: result.risk.key === "high",
+        data: result,
         onClick: () => openAlertPopup(result)
       });
     }
