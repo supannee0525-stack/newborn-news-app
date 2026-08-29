@@ -23,7 +23,7 @@ python3 -m http.server 8080
 
 - History is stored in the browser via `localStorage`.
 - No patient data is sent to the server.
-- The urgent in-app popup opens only for Medium Risk (5-6) and High Risk (7+).
+- The urgent in-app alert appears first as a mobile-style top notification banner for Medium Risk (5-6) and High Risk (7+). Tapping the banner opens the detailed popup.
 - This is a calculation aid only. Confirm thresholds and escalation policy with the clinical unit before real clinical use.
 
 ## LINE alert option

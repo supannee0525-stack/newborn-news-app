@@ -348,6 +348,10 @@
       mobileRisk: document.getElementById("mobileRisk"),
       mobileCalculateButton: document.getElementById("mobileCalculateButton"),
       toast: document.getElementById("toast"),
+      alertBanner: document.getElementById("alertBanner"),
+      bannerTime: document.getElementById("bannerTime"),
+      bannerTitle: document.getElementById("bannerTitle"),
+      bannerMessage: document.getElementById("bannerMessage"),
       alertModal: document.getElementById("alertModal"),
       closeAlertButton: document.getElementById("closeAlertButton"),
       ackAlertButton: document.getElementById("ackAlertButton"),
@@ -379,6 +383,8 @@
         currentResult = null;
         renderEmptyResult();
         updateButtons();
+        closeAlertBanner();
+        closeAlertPopup();
         Object.keys(NUMERIC_FIELDS).forEach((key) => updateScorePill(key, null));
         Object.keys(SELECT_FIELDS).forEach((key) => updateScorePill(key, null));
       }, 0);
@@ -432,6 +438,11 @@
 
     ui.closeAlertButton.addEventListener("click", closeAlertPopup);
     ui.ackAlertButton.addEventListener("click", closeAlertPopup);
+    ui.alertBanner.addEventListener("click", () => {
+      if (currentResult && isEscalationRisk(currentResult)) {
+        openAlertPopup(currentResult);
+      }
+    });
     ui.alertModal.addEventListener("click", (event) => {
       if (event.target.hasAttribute("data-close-alert")) closeAlertPopup();
     });
@@ -475,17 +486,25 @@
         closeAlertPopup();
       }
 
+      if (!showProblemToast && !ui.alertBanner.hidden) {
+        closeAlertBanner();
+      }
+
       if (showProblemToast && !result.complete) {
+        closeAlertBanner();
+        closeAlertPopup();
         showToast(result.problems[0]?.message || "กรอกข้อมูลให้ครบก่อนคำนวณ");
       }
 
       if (showProblemToast && result.complete) {
         if (isEscalationRisk(result)) {
-          openAlertPopup(result);
+          showAlertBanner(result);
         } else if (result.alerts.length) {
+          closeAlertBanner();
           closeAlertPopup();
           showToast("แสดงผลแล้ว: ยังไม่เข้าเกณฑ์ Alert เร่งด่วน");
         } else {
+          closeAlertBanner();
           closeAlertPopup();
           showToast("ไม่พบค่าผิดปกติตามตารางนี้");
         }
@@ -614,6 +633,31 @@
     }
 
     function openAlertPopup(result) {
+      renderAlertPopupContent(result);
+      closeAlertBanner();
+      ui.alertModal.hidden = false;
+      ui.ackAlertButton.focus();
+    }
+
+    function showAlertBanner(result) {
+      const escalationCopy = getEscalationCopy(result);
+      const patientText = getPatientDisplayText();
+      const keyAlert = result.criticalAlerts[0] || result.alerts[0];
+      const alertText = keyAlert ? keyAlert.message : result.risk.action;
+
+      renderAlertPopupContent(result);
+      closeAlertPopup();
+      ui.bannerTime.textContent = "เมื่อสักครู่";
+      ui.bannerTitle.textContent = `${escalationCopy.title} • NEWS ${result.total}`;
+      ui.bannerMessage.textContent = `${patientText}: ${alertText}`;
+      ui.alertBanner.className = `alert-banner ${result.risk.key}`;
+      ui.alertBanner.hidden = false;
+      window.requestAnimationFrame(() => {
+        ui.alertBanner.classList.add("show");
+      });
+    }
+
+    function renderAlertPopupContent(result) {
       const escalationCopy = getEscalationCopy(result);
       ui.alertTitle.textContent = escalationCopy.title;
       ui.modalScore.textContent = result.total;
@@ -622,12 +666,22 @@
       ui.modalAction.textContent = result.risk.action;
       ui.modalFrequency.textContent = `ความถี่ประเมินซ้ำ: ${result.risk.frequency}`;
       ui.modalAlertList.innerHTML = result.alerts.map((item) => `<li>${escapeHtml(item.message)}</li>`).join("");
-      ui.alertModal.hidden = false;
-      ui.ackAlertButton.focus();
     }
 
     function closeAlertPopup() {
       ui.alertModal.hidden = true;
+    }
+
+    function closeAlertBanner() {
+      ui.alertBanner.classList.remove("show", "medium", "high");
+      ui.alertBanner.hidden = true;
+    }
+
+    function getPatientDisplayText() {
+      const input = getInput();
+      if (input.patientName) return input.patientName;
+      if (input.hn) return `HN ${input.hn}`;
+      return "ไม่ระบุผู้ป่วย/เตียง";
     }
 
     function saveCurrentRecord() {

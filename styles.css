@@ -639,6 +639,137 @@ select:focus {
   opacity: 1;
 }
 
+.alert-banner[hidden] {
+  display: none;
+}
+
+.alert-banner {
+  position: fixed;
+  top: max(14px, env(safe-area-inset-top));
+  left: 50%;
+  z-index: 55;
+  width: min(720px, calc(100vw - 28px));
+  display: grid;
+  grid-template-columns: 52px minmax(0, 1fr);
+  gap: 14px;
+  align-items: center;
+  transform: translate(-50%, -20px);
+  border: 1px solid rgba(255, 255, 255, 0.46);
+  border-radius: 30px;
+  padding: 14px 18px;
+  background:
+    linear-gradient(135deg, rgba(21, 31, 48, 0.9), rgba(248, 250, 252, 0.6)),
+    rgba(46, 52, 64, 0.78);
+  color: #fff;
+  text-align: left;
+  opacity: 0;
+  box-shadow: 0 22px 60px rgba(15, 23, 42, 0.34);
+  backdrop-filter: blur(22px) saturate(1.25);
+  -webkit-backdrop-filter: blur(22px) saturate(1.25);
+  cursor: pointer;
+  transition: opacity 180ms ease, transform 180ms ease;
+}
+
+.alert-banner.show {
+  transform: translate(-50%, 0);
+  opacity: 1;
+}
+
+.alert-banner.high {
+  background:
+    linear-gradient(135deg, rgba(127, 29, 29, 0.94), rgba(248, 113, 113, 0.42)),
+    rgba(69, 10, 10, 0.82);
+}
+
+.alert-banner.medium {
+  background:
+    linear-gradient(135deg, rgba(146, 64, 14, 0.94), rgba(251, 191, 36, 0.4)),
+    rgba(69, 26, 3, 0.82);
+}
+
+.alert-banner:focus-visible {
+  outline: 3px solid rgba(20, 184, 166, 0.55);
+  outline-offset: 3px;
+}
+
+.alert-banner-icon {
+  width: 52px;
+  height: 52px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.62);
+  border-radius: 15px;
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
+  font-size: 1.32rem;
+  font-weight: 950;
+  line-height: 1;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+.alert-banner-body {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.alert-banner-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 0.92rem;
+  line-height: 1.1;
+}
+
+.alert-banner-meta strong,
+.alert-banner-meta em {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.alert-banner-meta strong {
+  font-weight: 900;
+}
+
+.alert-banner-meta em {
+  flex: 0 0 auto;
+  font-style: normal;
+  font-weight: 800;
+}
+
+.alert-banner-title {
+  overflow: hidden;
+  color: #fff;
+  font-size: 1.12rem;
+  font-weight: 950;
+  line-height: 1.28;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.alert-banner-message {
+  display: -webkit-box;
+  overflow: hidden;
+  color: rgba(255, 255, 255, 0.92);
+  font-size: 0.95rem;
+  font-weight: 700;
+  line-height: 1.45;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.alert-banner-handle {
+  justify-self: center;
+  width: 54px;
+  height: 5px;
+  margin-top: 5px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.52);
+}
+
 .mobile-action-bar {
   display: none;
 }
@@ -1006,6 +1137,30 @@ select:focus {
     min-height: 52px;
   }
 
+  .alert-banner {
+    top: max(10px, env(safe-area-inset-top));
+    width: calc(100vw - 24px);
+    grid-template-columns: 48px minmax(0, 1fr);
+    gap: 12px;
+    border-radius: 28px;
+    padding: 13px 15px;
+  }
+
+  .alert-banner-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 14px;
+    font-size: 1.2rem;
+  }
+
+  .alert-banner-title {
+    font-size: 1rem;
+  }
+
+  .alert-banner-message {
+    font-size: 0.92rem;
+  }
+
   .alert-modal {
     align-items: end;
     padding: 0;
@@ -1052,7 +1207,8 @@ select:focus {
   .history-panel,
   .actions,
   .history-actions,
-  .toast {
+  .toast,
+  .alert-banner {
     display: none !important;
   }
 

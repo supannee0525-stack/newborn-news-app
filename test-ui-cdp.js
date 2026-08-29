@@ -3,7 +3,8 @@
 const fs = require("fs");
 
 const port = process.env.CDP_PORT || "9333";
-const screenshotPath = process.env.SCREENSHOT_PATH || "/root/shots/newborn-news/alert-threshold-result.png";
+const targetUrl = process.env.TARGET_URL || "https://ai4you.click/newborn-news/";
+const screenshotPath = process.env.SCREENSHOT_PATH || "/root/shots/newborn-news/alert-banner-result.png";
 
 async function waitForTab() {
   const endpoint = `http://127.0.0.1:${port}/json/list`;
@@ -12,7 +13,8 @@ async function waitForTab() {
       const response = await fetch(endpoint);
       if (response.ok) {
         const tabs = await response.json();
-        const tab = tabs.find((item) => item.url.includes("/newborn-news/")) || tabs[0];
+        const pageTabs = tabs.filter((item) => item.type === "page" && !item.url.startsWith("chrome-extension://"));
+        const tab = pageTabs.find((item) => item.url.includes("/newborn-news/")) || pageTabs[0];
         if (tab?.webSocketDebuggerUrl) return tab;
       }
     } catch (error) {
@@ -60,12 +62,33 @@ async function main() {
   const cdp = connectCdp(tab.webSocketDebuggerUrl);
   await cdp.opened;
   await cdp.send("Page.enable");
+  await cdp.send("Page.navigate", { url: targetUrl });
+  await new Promise((resolve) => setTimeout(resolve, 1500));
   await cdp.send("Runtime.evaluate", {
     awaitPromise: true,
     returnByValue: true,
     expression: `new Promise((resolve) => {
       if (document.readyState === "complete") resolve(true);
       else window.addEventListener("load", () => resolve(true), { once: true });
+    })`
+  });
+  await cdp.send("Runtime.evaluate", {
+    awaitPromise: true,
+    returnByValue: true,
+    expression: `new Promise((resolve, reject) => {
+      const startedAt = Date.now();
+      const check = () => {
+        if (window.NewbornNEWS) {
+          resolve(true);
+          return;
+        }
+        if (Date.now() - startedAt > 5000) {
+          reject(new Error("NewbornNEWS app object was not ready"));
+          return;
+        }
+        window.setTimeout(check, 100);
+      };
+      check();
     })`
   });
 
@@ -85,11 +108,9 @@ async function main() {
       const fillAssessment = (input) => {
         Object.entries(input).forEach(([id, value]) => set(id, value));
       };
-      const submitAssessment = async (input) => {
-        fillAssessment(input);
-        document.querySelector(".primary-button").click();
-        await wait(160);
+      const collectState = (input) => {
         const calculated = window.NewbornNEWS.calculateNEWS(input);
+        const banner = document.getElementById("alertBanner");
         return {
           formulaTotal: calculated.total,
           formulaRisk: calculated.risk?.label,
@@ -102,8 +123,17 @@ async function main() {
           modalVisible: !document.getElementById("alertModal").hidden,
           modalTitle: document.getElementById("alertTitle").textContent.trim(),
           modalDescription: document.getElementById("alertDescription").textContent.trim(),
-          modalScore: document.getElementById("modalScore").textContent.trim()
+          modalScore: document.getElementById("modalScore").textContent.trim(),
+          bannerVisible: !banner.hidden && banner.classList.contains("show"),
+          bannerTitle: document.getElementById("bannerTitle").textContent.trim(),
+          bannerMessage: document.getElementById("bannerMessage").textContent.trim()
         };
+      };
+      const submitAssessment = async (input) => {
+        fillAssessment(input);
+        document.querySelector(".primary-button").click();
+        await wait(180);
+        return collectState(input);
       };
       set("patientName", "Baby Test");
       set("hn", "HN001");
@@ -129,6 +159,9 @@ async function main() {
         neuroColor: "pink-alert"
       };
       const medium = await submitAssessment(mediumInput);
+      document.getElementById("alertBanner").click();
+      await wait(100);
+      const mediumDetail = collectState(mediumInput);
       document.getElementById("ackAlertButton").click();
       await wait(80);
 
@@ -150,6 +183,7 @@ async function main() {
         hasApp: Boolean(window.NewbornNEWS),
         low,
         medium,
+        mediumDetail,
         high
       };
     })()`
@@ -160,28 +194,34 @@ async function main() {
   if (value.low.total !== "3" || !value.low.risk.includes("Low Risk")) {
     throw new Error(`Expected Low Risk total 3, got ${value.low.total} / ${value.low.risk}`);
   }
-  if (value.low.escalation || value.low.modalVisible) {
-    throw new Error("Low Risk should not open the urgent alert popup");
+  if (value.low.escalation || value.low.bannerVisible || value.low.modalVisible) {
+    throw new Error("Low Risk should not open the urgent alert banner or modal");
   }
   if (value.medium.total !== "5" || !value.medium.risk.includes("Medium Risk")) {
     throw new Error(`Expected Medium Risk total 5, got ${value.medium.total} / ${value.medium.risk}`);
   }
-  if (!value.medium.escalation || !value.medium.modalVisible || !value.medium.modalTitle.includes("เสี่ยงปานกลาง")) {
-    throw new Error("Medium Risk did not open the urgent staff alert popup");
+  if (!value.medium.escalation || !value.medium.bannerVisible || value.medium.modalVisible || !value.medium.bannerTitle.includes("เสี่ยงปานกลาง")) {
+    throw new Error("Medium Risk did not show the urgent staff alert banner first");
   }
-  if (!value.medium.modalDescription.includes("เจ้าหน้าที่เกี่ยวข้องทันที")) {
-    throw new Error("Medium Risk popup did not tell staff to alert immediately");
+  if (!value.medium.bannerMessage.includes("Baby Test")) {
+    throw new Error("Medium Risk banner did not include patient/bed context");
+  }
+  if (!value.mediumDetail.modalVisible || value.mediumDetail.modalScore !== "5" || !value.mediumDetail.modalTitle.includes("เสี่ยงปานกลาง")) {
+    throw new Error("Tapping the Medium Risk banner did not open detail modal");
+  }
+  if (!value.mediumDetail.modalDescription.includes("เจ้าหน้าที่เกี่ยวข้องทันที")) {
+    throw new Error("Medium Risk detail did not tell staff to alert immediately");
   }
   if (value.high.total !== "18") throw new Error(`Expected total 18, got ${value.high.total}`);
   if (!value.high.risk.includes("High Risk")) throw new Error(`Expected High Risk, got ${value.high.risk}`);
   if (!value.high.alerts.some((text) => text.includes("HR") && text.includes("3 คะแนน"))) {
     throw new Error("Missing HR score 3 alert");
   }
-  if (!value.high.escalation || !value.high.modalVisible || value.high.modalScore !== "18" || !value.high.modalTitle.includes("เสี่ยงสูง")) {
-    throw new Error("Alert popup did not open with the high-risk result");
+  if (!value.high.escalation || !value.high.bannerVisible || value.high.modalVisible || !value.high.bannerTitle.includes("เสี่ยงสูง")) {
+    throw new Error("High Risk did not show the urgent alert banner first");
   }
-  if (!value.high.modalDescription.includes("ทีมฉุกเฉิน") || !value.high.modalDescription.includes("ทันที")) {
-    throw new Error("High Risk popup did not include immediate emergency-team wording");
+  if (!value.high.bannerMessage.includes("Baby Test") || !value.high.bannerMessage.includes("3 คะแนน")) {
+    throw new Error("High Risk banner did not include patient context and key abnormal score");
   }
   if (value.high.historyRows < 1 || value.high.storedRecords < 1) {
     throw new Error("History record was not saved");
