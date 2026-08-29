@@ -1792,3 +1792,49 @@ input::placeholder {
   font-weight: 700;
   color: var(--teal-700);
 }
+
+/* Profile Onboarding Banner & Mandatory Mode */
+.profile-onboarding-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 18px;
+  padding: 14px 16px;
+  background: #eff6ff;
+  border: 1.5px solid #bfdbfe;
+  border-left: 4px solid #2563eb;
+  border-radius: var(--radius-md);
+  color: #1e3a8a;
+}
+
+.profile-onboarding-banner[hidden] {
+  display: none !important;
+}
+
+.profile-onboarding-banner .onboarding-icon {
+  font-size: 1.4rem;
+  line-height: 1;
+}
+
+.profile-onboarding-banner strong {
+  display: block;
+  font-size: 0.95rem;
+  font-weight: 800;
+  margin-bottom: 2px;
+}
+
+.profile-onboarding-banner p {
+  margin: 0;
+  font-size: 0.82rem;
+  color: #1d4ed8;
+  line-height: 1.4;
+}
+
+.profile-modal.mandatory-mode .profile-backdrop {
+  backdrop-filter: blur(12px);
+  background: rgba(15, 23, 42, 0.75);
+}
+
+.profile-modal.mandatory-mode #closeProfileBtn {
+  display: none !important;
+}

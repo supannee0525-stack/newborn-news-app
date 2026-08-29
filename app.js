@@ -457,6 +457,7 @@
       patientName: document.getElementById("patientName"),
       hn: document.getElementById("hn"),
       gestAge: document.getElementById("gestAge"),
+      attendingDoctor: document.getElementById("attendingDoctor"),
       assessedAt: document.getElementById("assessedAt"),
       bt: document.getElementById("bt"),
       hr: document.getElementById("hr"),
@@ -515,6 +516,7 @@
       activeReporterMeta: document.getElementById("activeReporterMeta"),
       openProfileModalBtn: document.getElementById("openProfileModalBtn"),
       profileModal: document.getElementById("profileModal"),
+      profileOnboardingBanner: document.getElementById("profileOnboardingBanner"),
       closeProfileBtn: document.getElementById("closeProfileBtn"),
       profileForm: document.getElementById("profileForm"),
       reporterNameInput: document.getElementById("reporterNameInput"),
@@ -536,6 +538,10 @@
     renderReporterUI();
     renderHistory();
     loadTeamAlertConfig();
+
+    if (!getActiveReporter()) {
+      openProfileModal(true);
+    }
 
     function loadReporters() {
       try {
@@ -626,9 +632,19 @@
       });
     }
 
-    function openProfileModal() {
+    function openProfileModal(mandatory = false) {
       if (!ui.profileModal) return;
       const active = getActiveReporter();
+      const isMandatory = mandatory || !active;
+      if (isMandatory) {
+        ui.profileModal.classList.add("mandatory-mode");
+        if (ui.profileOnboardingBanner) ui.profileOnboardingBanner.hidden = false;
+        if (ui.closeProfileBtn) ui.closeProfileBtn.hidden = true;
+      } else {
+        ui.profileModal.classList.remove("mandatory-mode");
+        if (ui.profileOnboardingBanner) ui.profileOnboardingBanner.hidden = true;
+        if (ui.closeProfileBtn) ui.closeProfileBtn.hidden = false;
+      }
       if (active) {
         if (ui.reporterNameInput) ui.reporterNameInput.value = active.name || "";
         if (ui.reporterRoleInput) ui.reporterRoleInput.value = active.role || "พยาบาลวิชาชีพ (RN)";
@@ -640,11 +656,19 @@
     }
 
     function closeProfileModal() {
-      if (ui.profileModal) ui.profileModal.hidden = true;
+      const active = getActiveReporter();
+      if (!active) {
+        showToast("🔒 กรุณาลงทะเบียนข้อมูลเจ้าหน้าที่ก่อนเข้าใช้งาน");
+        return;
+      }
+      if (ui.profileModal) {
+        ui.profileModal.classList.remove("mandatory-mode");
+        ui.profileModal.hidden = true;
+      }
     }
 
     if (ui.openProfileModalBtn) {
-      ui.openProfileModalBtn.addEventListener("click", openProfileModal);
+      ui.openProfileModalBtn.addEventListener("click", () => openProfileModal(false));
     }
     if (ui.closeProfileBtn) {
       ui.closeProfileBtn.addEventListener("click", closeProfileModal);
@@ -692,7 +716,10 @@
         saveReporters(reporters);
         setActiveReporterId(profileId);
         showToast(`บันทึกผู้รายงาน: ${name} เรียบร้อยแล้ว`);
-        closeProfileModal();
+        if (ui.profileModal) {
+          ui.profileModal.classList.remove("mandatory-mode");
+          ui.profileModal.hidden = true;
+        }
       });
     }
 
@@ -770,6 +797,10 @@
 
       lines.push(`📋 แนวทาง: ${result.risk.action}`);
       lines.push(`⏱ ความถี่ประเมินซ้ำ: ${result.risk.frequency}`);
+
+      if (input.attendingDoctor) {
+        lines.push(`👨‍⚕️ แพทย์เจ้าของไข้/ผู้ดูแล: ${input.attendingDoctor}`);
+      }
 
       const reporter = getActiveReporter();
       if (reporter && reporter.name) {
@@ -1068,6 +1099,7 @@
         patientName: fields.patientName.value.trim(),
         hn: fields.hn.value.trim(),
         gestAge: fields.gestAge.value.trim(),
+        attendingDoctor: fields.attendingDoctor ? fields.attendingDoctor.value.trim() : "",
         assessedAt: fields.assessedAt.value,
         bt: fields.bt.value,
         hr: fields.hr.value,
@@ -1262,6 +1294,7 @@
         patientName: input.patientName,
         hn: input.hn,
         gestAge: input.gestAge,
+        attendingDoctor: input.attendingDoctor || "",
         total: result.total,
         riskKey: result.risk.key,
         riskLabel: result.risk.label,
@@ -1427,6 +1460,7 @@
         patientName: input.patientName,
         hn: input.hn,
         gestAge: input.gestAge,
+        attendingDoctor: input.attendingDoctor || "",
         bt: Number(input.bt),
         hr: Number(input.hr),
         rr: Number(input.rr),
@@ -1473,6 +1507,9 @@
       }
 
       ui.historyBody.innerHTML = records.slice(0, 50).map((record) => {
+        const doctorText = record.attendingDoctor
+          ? `<br><span class="muted" style="font-size:0.78rem">👨‍⚕️ ${escapeHtml(record.attendingDoctor)}</span>`
+          : "";
         const reporterText = record.reporter && record.reporter.name 
           ? `<br><span class="reporter-tag">👤 ${escapeHtml(record.reporter.name)}</span>` 
           : "";
@@ -1482,6 +1519,7 @@
           <td>
             <strong>${escapeHtml(record.patientName || "ไม่ระบุ")}</strong>
             <br><span class="muted">${escapeHtml(record.hn || "-")}${record.gestAge ? ` • ${escapeHtml(record.gestAge)}` : ""}</span>
+            ${doctorText}
             ${reporterText}
           </td>
           <td>${escapeHtml(Number(record.bt).toFixed(1))}</td>
@@ -1504,6 +1542,7 @@
         "patient_name",
         "hn",
         "gest_age",
+        "attending_doctor",
         "reporter_name",
         "reporter_role",
         "reporter_ward",
@@ -1526,6 +1565,7 @@
         record.patientName,
         record.hn,
         record.gestAge,
+        record.attendingDoctor || "",
         record.reporter?.name || "",
         record.reporter?.role || "",
         record.reporter?.ward || "",

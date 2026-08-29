@@ -97,6 +97,10 @@
               <input id="gestAge" name="gestAge" type="text" autocomplete="off" placeholder="เช่น 38+2 wk">
             </label>
             <label>
+              แพทย์เจ้าของไข้ / ผู้ดูแล
+              <input id="attendingDoctor" name="attendingDoctor" type="text" autocomplete="off" placeholder="เช่น นพ. ประเสริฐ หรือ กุมารแพทย์เวร">
+            </label>
+            <label>
               วันที่/เวลา
               <input id="assessedAt" name="assessedAt" type="datetime-local">
             </label>
@@ -351,24 +355,34 @@
         <button type="button" class="icon-button" id="closeProfileBtn" aria-label="ปิด popup">×</button>
       </div>
       <div class="profile-dialog-body">
+        <div class="profile-onboarding-banner" id="profileOnboardingBanner" hidden>
+          <span class="onboarding-icon">🔒</span>
+          <div>
+            <strong>กรุณาลงทะเบียนข้อมูลก่อนเข้าใช้งาน</strong>
+            <p>เพื่อระบุตัวตนแพทย์เจ้าของไข้ หรือพยาบาลผู้ประเมินในการส่งเวรและแจ้งเตือนฉุกเฉิน</p>
+          </div>
+        </div>
+
         <form id="profileForm">
           <fieldset class="profile-form-grid">
             <legend>ข้อมูลเจ้าหน้าที่ / ผู้ประเมิน</legend>
             <label>
               ชื่อ-นามสกุล / ชื่อเรียกทางการ
-              <input type="text" id="reporterNameInput" required placeholder="เช่น พว. สุภาณี ใจดี">
+              <input type="text" id="reporterNameInput" required placeholder="เช่น นพ. เอกชัย มั่นคง หรือ พว. สุภาณี ใจดี">
             </label>
             <div class="profile-two-col">
               <label>
                 ตำแหน่ง / วิชาชีพ
                 <select id="reporterRoleInput" required>
-                  <option value="พยาบาลวิชาชีพ (RN)">พยาบาลวิชาชีพ (RN)</option>
-                  <option value="พยาบาลชำนาญการ">พยาบาลชำนาญการ</option>
-                  <option value="พยาบาลเฉพาะทาง NICU">พยาบาลเฉพาะทาง NICU</option>
-                  <option value="กุมารแพทย์ (Pediatrician)">กุมารแพทย์ (Pediatrician)</option>
-                  <option value="แพทย์ประจำบ้าน (Resident)">แพทย์ประจำบ้าน (Resident)</option>
-                  <option value="เจ้าหน้าที่พยาบาล (PN)">เจ้าหน้าที่พยาบาล (PN)</option>
-                  <option value="อื่นๆ">อื่นๆ</option>
+                  <option value="แพทย์เจ้าของไข้ (Attending Physician)">👨‍⚕️ แพทย์เจ้าของไข้ (Attending Physician)</option>
+                  <option value="กุมารแพทย์ (Pediatrician)">🩺 กุมารแพทย์ (Pediatrician)</option>
+                  <option value="แพทย์ประจำบ้าน / แพทย์เวร (Resident)">🩺 แพทย์ประจำบ้าน / แพทย์เวร (Resident)</option>
+                  <option value="พยาบาลเจ้าของไข้ / RN">👩‍⚕️ พยาบาลเจ้าของไข้ / RN</option>
+                  <option value="พยาบาลวิชาชีพ (RN)" selected>👩‍⚕️ พยาบาลวิชาชีพ (RN)</option>
+                  <option value="พยาบาลเฉพาะทาง NICU">🏥 พยาบาลเฉพาะทาง NICU</option>
+                  <option value="พยาบาลชำนาญการ">🏥 พยาบาลชำนาญการ</option>
+                  <option value="เจ้าหน้าที่พยาบาล (PN)">📋 เจ้าหน้าที่พยาบาล (PN)</option>
+                  <option value="บุคลากรทางการแพทย์อื่นๆ">🏷️ บุคลากรทางการแพทย์อื่นๆ</option>
                 </select>
               </label>
               <label>
@@ -380,16 +394,17 @@
                   <option value="หอผู้ป่วยหลังคลอด (Postpartum)">หอผู้ป่วยหลังคลอด</option>
                   <option value="หอผู้ป่วยเด็ก (Pediatric Ward)">หอผู้ป่วยเด็ก</option>
                   <option value="แผนกฉุกเฉิน (ER)">แผนกฉุกเฉิน (ER)</option>
+                  <option value="แผนกผู้ป่วยนอกเด็ก (OPD)">แผนกผู้ป่วยนอกเด็ก (OPD)</option>
                 </select>
               </label>
             </div>
             <label>
-              รหัสเจ้าหน้าที่ / เบอร์โทรภายใน <small>(ไม่บังคับ)</small>
-              <input type="text" id="reporterCodeInput" placeholder="เช่น RN-10492 หรือ ต่อ 4201">
+              รหัสเจ้าหน้าที่ / เลข ว. / เบอร์โทรภายใน <small>(ไม่บังคับ)</small>
+              <input type="text" id="reporterCodeInput" placeholder="เช่น ว.45892 หรือ RN-10492 หรือ ต่อ 4201">
             </label>
           </fieldset>
           <div class="profile-form-actions">
-            <button type="submit" class="primary-button" id="saveProfileBtn">💾 บันทึกและตั้งเป็นผู้รายงานปัจจุบัน</button>
+            <button type="submit" class="primary-button" id="saveProfileBtn">💾 บันทึกและเข้าสู่ระบบประเมิน</button>
           </div>
         </form>
 
