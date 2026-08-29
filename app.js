@@ -399,9 +399,13 @@
       body,
       icon: iconUrl,
       badge: badgeUrl,
-      tag: tag || "newborn-news-alert",
+      tag: tag || `newborn-news-${Date.now()}`,
       requireInteraction: Boolean(requireInteraction),
-      vibrate: requireInteraction ? [250, 100, 250, 100, 350] : [200, 100, 200],
+      silent: false,
+      vibrate: requireInteraction ? [300, 100, 300, 100, 350] : [200, 100, 200],
+      actions: [
+        { action: "view", title: "🔍 เปิดดูรายละเอียด" }
+      ],
       data: data || null
     };
 

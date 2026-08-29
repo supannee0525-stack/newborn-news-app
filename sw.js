@@ -106,8 +106,13 @@ self.addEventListener("push", (event) => {
       body: payload.body,
       icon: "./icon-192.png",
       badge: "./icon-192.png",
-      tag: payload.tag,
+      tag: payload.tag || `newborn-news-${Date.now()}`,
       requireInteraction: true,
+      silent: false,
+      vibrate: [300, 100, 300, 100, 300],
+      actions: [
+        { action: "view", title: "🔍 เปิดดูรายละเอียด" }
+      ],
       data: payload.data
     })
   );
