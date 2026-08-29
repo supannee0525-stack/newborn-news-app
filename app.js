@@ -833,23 +833,48 @@
         if (typeof window !== "undefined" && "Notification" in window && Notification.permission !== "granted") {
           await handleRequestPermission();
         }
-        showToast("⏳ กำลังนับถอยหลัง 3 วินาที... ให้รีบพับหน้าจอหรือสลับแอปออกไปครับ!");
+        showToast("⏳ กำลังนับถอยหลัง 3 วินาที... ให้กดปุ่มล็อกหน้าจอ (Lock Screen) ตอนนี้ได้เลยครับ!");
+        const mockTestResult = {
+          complete: true,
+          total: 8,
+          risk: RISK_LEVELS[3],
+          alerts: [
+            { score: 3, message: "HR > 200 (3 คะแนน)" },
+            { score: 3, message: "SpO2 < 85% (3 คะแนน)" },
+            { score: 2, message: "BT 38.1-38.9°C (2 คะแนน)" }
+          ],
+          criticalAlerts: [
+            { score: 3, message: "HR > 200 (3 คะแนน)" },
+            { score: 3, message: "SpO2 < 85% (3 คะแนน)" }
+          ],
+          details: []
+        };
+
+        if (typeof navigator !== "undefined" && "serviceWorker" in navigator) {
+          if (navigator.serviceWorker.controller) {
+            navigator.serviceWorker.controller.postMessage({
+              type: "SCHEDULE_TEST_ALERT",
+              delay: 3000,
+              title: "🚨 เสี่ยงสูง NEWS 8: Baby A (เตียง 3)",
+              body: "HR 205 /min, SpO2 84% • แจ้งแพทย์/ทีมฉุกเฉินทันที",
+              data: mockTestResult
+            });
+          } else {
+            navigator.serviceWorker.ready.then((reg) => {
+              if (reg && reg.active) {
+                reg.active.postMessage({
+                  type: "SCHEDULE_TEST_ALERT",
+                  delay: 3000,
+                  title: "🚨 เสี่ยงสูง NEWS 8: Baby A (เตียง 3)",
+                  body: "HR 205 /min, SpO2 84% • แจ้งแพทย์/ทีมฉุกเฉินทันที",
+                  data: mockTestResult
+                });
+              }
+            }).catch(() => {});
+          }
+        }
+
         window.setTimeout(() => {
-          const mockTestResult = {
-            complete: true,
-            total: 8,
-            risk: RISK_LEVELS[3],
-            alerts: [
-              { score: 3, message: "HR > 200 (3 คะแนน)" },
-              { score: 3, message: "SpO2 < 85% (3 คะแนน)" },
-              { score: 2, message: "BT 38.1-38.9°C (2 คะแนน)" }
-            ],
-            criticalAlerts: [
-              { score: 3, message: "HR > 200 (3 คะแนน)" },
-              { score: 3, message: "SpO2 < 85% (3 คะแนน)" }
-            ],
-            details: []
-          };
           showAlertBanner(mockTestResult);
         }, 3000);
       });

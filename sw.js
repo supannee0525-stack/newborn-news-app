@@ -117,3 +117,29 @@ self.addEventListener("push", (event) => {
     })
   );
 });
+
+// Background Timer for Lock Screen testing
+self.addEventListener("message", (event) => {
+  if (event.data && event.data.type === "SCHEDULE_TEST_ALERT") {
+    const delay = event.data.delay || 3000;
+    const title = event.data.title || "🚨 เสี่ยงสูง NEWS 8: Baby A (เตียง 3)";
+    const body = event.data.body || "HR 205 /min, SpO2 84% • แจ้งแพทย์/ทีมฉุกเฉินทันที";
+    const data = event.data.data || null;
+
+    setTimeout(() => {
+      self.registration.showNotification(title, {
+        body: body,
+        icon: "./icon-192.png",
+        badge: "./icon-192.png",
+        tag: `newborn-news-${Date.now()}`,
+        requireInteraction: true,
+        silent: false,
+        vibrate: [300, 100, 300, 100, 350],
+        actions: [
+          { action: "view", title: "🔍 เปิดดูรายละเอียด" }
+        ],
+        data: data
+      });
+    }, delay);
+  }
+});
