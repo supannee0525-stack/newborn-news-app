@@ -4,6 +4,8 @@
   const STORAGE_KEY = "newborn-news-records-v1";
   const ALERT_KEY_STORAGE_KEY = "newborn-news-alert-key";
   const NOTIF_SOUND_STORAGE_KEY = "newborn-news-sound-enabled";
+  const REPORTERS_STORAGE_KEY = "newborn-news-reporters-v1";
+  const ACTIVE_REPORTER_STORAGE_KEY = "newborn-news-active-reporter-id-v1";
 
   const RISK_LEVELS = [
     {
@@ -508,7 +510,18 @@
       testAlertBtn: document.getElementById("testAlertBtn"),
       testDelayAlertBtn: document.getElementById("testDelayAlertBtn"),
       notificationStatusText: document.getElementById("notificationStatusText"),
-      notificationStatusSub: document.getElementById("notificationStatusSub")
+      notificationStatusSub: document.getElementById("notificationStatusSub"),
+      activeReporterName: document.getElementById("activeReporterName"),
+      activeReporterMeta: document.getElementById("activeReporterMeta"),
+      openProfileModalBtn: document.getElementById("openProfileModalBtn"),
+      profileModal: document.getElementById("profileModal"),
+      closeProfileBtn: document.getElementById("closeProfileBtn"),
+      profileForm: document.getElementById("profileForm"),
+      reporterNameInput: document.getElementById("reporterNameInput"),
+      reporterRoleInput: document.getElementById("reporterRoleInput"),
+      reporterWardInput: document.getElementById("reporterWardInput"),
+      reporterCodeInput: document.getElementById("reporterCodeInput"),
+      savedProfilesList: document.getElementById("savedProfilesList")
     };
 
     let soundEnabled = localStorage.getItem(NOTIF_SOUND_STORAGE_KEY) !== "false";
@@ -520,9 +533,168 @@
       requiresAlertKey: false
     };
 
-    fields.assessedAt.value = toDatetimeLocal(new Date());
+    renderReporterUI();
     renderHistory();
     loadTeamAlertConfig();
+
+    function loadReporters() {
+      try {
+        const raw = localStorage.getItem(REPORTERS_STORAGE_KEY);
+        return raw ? JSON.parse(raw) : [];
+      } catch (e) {
+        return [];
+      }
+    }
+
+    function saveReporters(list) {
+      localStorage.setItem(REPORTERS_STORAGE_KEY, JSON.stringify(list));
+    }
+
+    function getActiveReporter() {
+      const reporters = loadReporters();
+      if (!reporters.length) return null;
+      const activeId = localStorage.getItem(ACTIVE_REPORTER_STORAGE_KEY);
+      const found = reporters.find((r) => r.id === activeId);
+      return found || reporters[0];
+    }
+
+    function setActiveReporterId(id) {
+      localStorage.setItem(ACTIVE_REPORTER_STORAGE_KEY, id);
+      renderReporterUI();
+      renderSavedProfiles();
+    }
+
+    function renderReporterUI() {
+      const reporter = getActiveReporter();
+      if (reporter && reporter.name) {
+        if (ui.activeReporterName) ui.activeReporterName.textContent = reporter.name;
+        if (ui.activeReporterMeta) {
+          const parts = [reporter.role, reporter.ward, reporter.code ? `รหัส ${reporter.code}` : ""].filter(Boolean);
+          ui.activeReporterMeta.textContent = parts.join(" • ");
+        }
+      } else {
+        if (ui.activeReporterName) ui.activeReporterName.textContent = "ยังไม่ได้ลงทะเบียนผู้รายงาน";
+        if (ui.activeReporterMeta) ui.activeReporterMeta.textContent = "แตะเพื่อระบุชื่อพยาบาล / แพทย์ผู้ประเมิน และหอผู้ป่วย";
+      }
+    }
+
+    function renderSavedProfiles() {
+      if (!ui.savedProfilesList) return;
+      const reporters = loadReporters();
+      const active = getActiveReporter();
+      if (!reporters.length) {
+        ui.savedProfilesList.innerHTML = `<li class="muted-profile">ยังไม่มีรายชื่อเจ้าหน้าที่ที่บันทึกไว้ในเครื่องนี้</li>`;
+        return;
+      }
+
+      ui.savedProfilesList.innerHTML = reporters.map((rep) => {
+        const isActive = active && active.id === rep.id;
+        return `
+          <li class="profile-card ${isActive ? "active" : ""}">
+            <div class="profile-card-info">
+              <strong>${escapeHtml(rep.name)}</strong>
+              <span>${escapeHtml(rep.role || "")} • ${escapeHtml(rep.ward || "")}${rep.code ? ` [${escapeHtml(rep.code)}]` : ""}</span>
+            </div>
+            <div class="profile-card-actions">
+              ${isActive 
+                ? `<span class="active-pill">✓ ใช้งานอยู่</span>` 
+                : `<button type="button" class="switch-profile-btn" data-switch-id="${escapeHtml(rep.id)}">เลือก</button>`}
+              <button type="button" class="delete-profile-btn" data-delete-id="${escapeHtml(rep.id)}" aria-label="ลบรายชื่อ">✕</button>
+            </div>
+          </li>
+        `;
+      }).join("");
+
+      ui.savedProfilesList.querySelectorAll("[data-switch-id]").forEach((btn) => {
+        btn.addEventListener("click", (e) => {
+          const id = e.currentTarget.getAttribute("data-switch-id");
+          setActiveReporterId(id);
+          showToast(`สลับผู้รายงานเป็น: ${getActiveReporter()?.name || ""}`);
+          closeProfileModal();
+        });
+      });
+
+      ui.savedProfilesList.querySelectorAll("[data-delete-id]").forEach((btn) => {
+        btn.addEventListener("click", (e) => {
+          const id = e.currentTarget.getAttribute("data-delete-id");
+          const list = loadReporters().filter((r) => r.id !== id);
+          saveReporters(list);
+          renderReporterUI();
+          renderSavedProfiles();
+          showToast("ลบรายชื่อเจ้าหน้าที่แล้ว");
+        });
+      });
+    }
+
+    function openProfileModal() {
+      if (!ui.profileModal) return;
+      const active = getActiveReporter();
+      if (active) {
+        if (ui.reporterNameInput) ui.reporterNameInput.value = active.name || "";
+        if (ui.reporterRoleInput) ui.reporterRoleInput.value = active.role || "พยาบาลวิชาชีพ (RN)";
+        if (ui.reporterWardInput) ui.reporterWardInput.value = active.ward || "หอผู้ป่วยทารกแรกเกิดวิกฤต (NICU)";
+        if (ui.reporterCodeInput) ui.reporterCodeInput.value = active.code || "";
+      }
+      renderSavedProfiles();
+      ui.profileModal.hidden = false;
+    }
+
+    function closeProfileModal() {
+      if (ui.profileModal) ui.profileModal.hidden = true;
+    }
+
+    if (ui.openProfileModalBtn) {
+      ui.openProfileModalBtn.addEventListener("click", openProfileModal);
+    }
+    if (ui.closeProfileBtn) {
+      ui.closeProfileBtn.addEventListener("click", closeProfileModal);
+    }
+    if (ui.profileModal) {
+      ui.profileModal.addEventListener("click", (e) => {
+        if (e.target.hasAttribute("data-close-profile")) {
+          closeProfileModal();
+        }
+      });
+    }
+
+    if (ui.profileForm) {
+      ui.profileForm.addEventListener("submit", (e) => {
+        e.preventDefault();
+        const name = ui.reporterNameInput.value.trim();
+        const role = ui.reporterRoleInput.value;
+        const ward = ui.reporterWardInput.value;
+        const code = ui.reporterCodeInput.value.trim();
+
+        if (!name) {
+          showToast("กรุณาระบุชื่อผู้รายงาน");
+          return;
+        }
+
+        const reporters = loadReporters();
+        let existing = reporters.find((r) => r.name.toLowerCase() === name.toLowerCase());
+        let profileId = existing ? existing.id : `staff-${Date.now()}`;
+
+        if (existing) {
+          existing.role = role;
+          existing.ward = ward;
+          existing.code = code;
+        } else {
+          reporters.unshift({
+            id: profileId,
+            name,
+            role,
+            ward,
+            code,
+            createdAt: new Date().toISOString()
+          });
+        }
+
+        saveReporters(reporters);
+        setActiveReporterId(profileId);
+        showToast(`บันทึกผู้รายงาน: ${name} เรียบร้อยแล้ว`);
+        closeProfileModal();
+      });
+    }
 
     form.addEventListener("submit", (event) => {
       event.preventDefault();
@@ -598,6 +770,13 @@
 
       lines.push(`📋 แนวทาง: ${result.risk.action}`);
       lines.push(`⏱ ความถี่ประเมินซ้ำ: ${result.risk.frequency}`);
+
+      const reporter = getActiveReporter();
+      if (reporter && reporter.name) {
+        const rParts = [reporter.name, reporter.role ? `(${reporter.role})` : "", reporter.ward ? `• ${reporter.ward}` : "", reporter.code ? `[${reporter.code}]` : ""].filter(Boolean);
+        lines.push(`👤 ผู้ประเมิน/รายงาน: ${rParts.join(" ")}`);
+      }
+
       return lines.join("\n");
     }
 
@@ -1077,6 +1256,7 @@
 
     function buildTeamAlertPayload(result) {
       const input = getInput();
+      const reporter = getActiveReporter();
       return {
         assessedAt: input.assessedAt ? new Date(input.assessedAt).toISOString() : new Date().toISOString(),
         patientName: input.patientName,
@@ -1087,7 +1267,13 @@
         riskLabel: result.risk.label,
         action: result.risk.action,
         frequency: result.risk.frequency,
-        alerts: result.alerts.map((item) => item.message)
+        alerts: result.alerts.map((item) => item.message),
+        reporter: reporter ? {
+          name: reporter.name,
+          role: reporter.role,
+          ward: reporter.ward,
+          code: reporter.code || ""
+        } : null
       };
     }
 
@@ -1233,6 +1419,7 @@
 
     function buildRecord(result) {
       const input = getInput();
+      const reporter = getActiveReporter();
       return {
         id: (global.crypto && global.crypto.randomUUID) ? global.crypto.randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`,
         createdAt: new Date().toISOString(),
@@ -1251,7 +1438,13 @@
         riskLabel: result.risk.label,
         action: result.risk.action,
         frequency: result.risk.frequency,
-        alerts: result.alerts.map((item) => item.message)
+        alerts: result.alerts.map((item) => item.message),
+        reporter: reporter ? {
+          name: reporter.name,
+          role: reporter.role,
+          ward: reporter.ward,
+          code: reporter.code || ""
+        } : null
       };
     }
 
@@ -1279,12 +1472,17 @@
         return;
       }
 
-      ui.historyBody.innerHTML = records.slice(0, 50).map((record) => `
+      ui.historyBody.innerHTML = records.slice(0, 50).map((record) => {
+        const reporterText = record.reporter && record.reporter.name 
+          ? `<br><span class="reporter-tag">👤 ${escapeHtml(record.reporter.name)}</span>` 
+          : "";
+        return `
         <tr>
           <td>${escapeHtml(formatDisplayDate(record.assessedAt))}</td>
           <td>
             <strong>${escapeHtml(record.patientName || "ไม่ระบุ")}</strong>
             <br><span class="muted">${escapeHtml(record.hn || "-")}${record.gestAge ? ` • ${escapeHtml(record.gestAge)}` : ""}</span>
+            ${reporterText}
           </td>
           <td>${escapeHtml(Number(record.bt).toFixed(1))}</td>
           <td>${escapeHtml(record.hr)}</td>
@@ -1293,7 +1491,8 @@
           <td class="score-cell">${escapeHtml(record.total)}</td>
           <td><span class="risk-badge ${escapeHtml(record.riskKey)}">${escapeHtml(record.riskLabel)}</span></td>
         </tr>
-      `).join("");
+      `;
+      }).join("");
     }
 
     function exportCsv() {
@@ -1305,6 +1504,10 @@
         "patient_name",
         "hn",
         "gest_age",
+        "reporter_name",
+        "reporter_role",
+        "reporter_ward",
+        "reporter_code",
         "bt",
         "hr",
         "rr",
@@ -1323,6 +1526,10 @@
         record.patientName,
         record.hn,
         record.gestAge,
+        record.reporter?.name || "",
+        record.reporter?.role || "",
+        record.reporter?.ward || "",
+        record.reporter?.code || "",
         record.bt,
         record.hr,
         record.rr,

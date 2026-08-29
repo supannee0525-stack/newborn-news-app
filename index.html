@@ -36,6 +36,22 @@
       เครื่องมือนี้เป็นตัวช่วยคำนวณและบันทึก ไม่ใช่คำสั่งรักษา ให้ทวนเกณฑ์กับแนวทางของหน่วยงานก่อนนำไปใช้จริง โดยเฉพาะเคสที่มี apnea, gasping, grunting, cyanosis, ชัก หรือไม่ตอบสนอง
     </section>
 
+    <section class="reporter-bar" aria-label="ข้อมูลผู้รายงานและผู้ประเมิน">
+      <div class="reporter-info">
+        <span class="reporter-avatar" id="reporterAvatar" aria-hidden="true">👤</span>
+        <div class="reporter-details">
+          <div class="reporter-title-row">
+            <span class="reporter-badge">ผู้รายงาน / ผู้ประเมิน</span>
+            <strong id="activeReporterName">ยังไม่ได้ลงทะเบียนผู้รายงาน</strong>
+          </div>
+          <p id="activeReporterMeta" class="reporter-meta">แตะเพื่อระบุชื่อพยาบาล / แพทย์ผู้ประเมิน และหอผู้ป่วย</p>
+        </div>
+      </div>
+      <div class="reporter-actions">
+        <button type="button" class="reporter-btn" id="openProfileModalBtn">👤 สลับ / ลงทะเบียนผู้รายงาน</button>
+      </div>
+    </section>
+
     <section class="notification-toolbar" aria-label="การตั้งค่าแจ้งเตือนหน้าจอ">
       <div class="notification-status-group">
         <span class="notification-icon" aria-hidden="true">🔔</span>
@@ -324,6 +340,67 @@
     </section>
   </div>
 
-  <script src="app.js?v=20260829-v4"></script>
+  <div class="profile-modal" id="profileModal" hidden>
+    <div class="profile-backdrop" data-close-profile></div>
+    <section class="profile-dialog" role="dialog" aria-modal="true" aria-labelledby="profileTitle">
+      <div class="profile-dialog-head">
+        <div>
+          <p class="section-kicker">Staff Profile</p>
+          <h2 id="profileTitle">ลงทะเบียน / สลับผู้รายงาน</h2>
+        </div>
+        <button type="button" class="icon-button" id="closeProfileBtn" aria-label="ปิด popup">×</button>
+      </div>
+      <div class="profile-dialog-body">
+        <form id="profileForm">
+          <fieldset class="profile-form-grid">
+            <legend>ข้อมูลเจ้าหน้าที่ / ผู้ประเมิน</legend>
+            <label>
+              ชื่อ-นามสกุล / ชื่อเรียกทางการ
+              <input type="text" id="reporterNameInput" required placeholder="เช่น พว. สุภาณี ใจดี">
+            </label>
+            <div class="profile-two-col">
+              <label>
+                ตำแหน่ง / วิชาชีพ
+                <select id="reporterRoleInput" required>
+                  <option value="พยาบาลวิชาชีพ (RN)">พยาบาลวิชาชีพ (RN)</option>
+                  <option value="พยาบาลชำนาญการ">พยาบาลชำนาญการ</option>
+                  <option value="พยาบาลเฉพาะทาง NICU">พยาบาลเฉพาะทาง NICU</option>
+                  <option value="กุมารแพทย์ (Pediatrician)">กุมารแพทย์ (Pediatrician)</option>
+                  <option value="แพทย์ประจำบ้าน (Resident)">แพทย์ประจำบ้าน (Resident)</option>
+                  <option value="เจ้าหน้าที่พยาบาล (PN)">เจ้าหน้าที่พยาบาล (PN)</option>
+                  <option value="อื่นๆ">อื่นๆ</option>
+                </select>
+              </label>
+              <label>
+                หอผู้ป่วย / แผนก (Ward)
+                <select id="reporterWardInput" required>
+                  <option value="หอผู้ป่วยทารกแรกเกิดวิกฤต (NICU)">NICU (ทารกวิกฤต)</option>
+                  <option value="หอผู้ป่วยทารกแรกเกิด (SCN / Nursery)">SCN / Nursery</option>
+                  <option value="ห้องคลอด (Labor Room)">ห้องคลอด (Labor Room)</option>
+                  <option value="หอผู้ป่วยหลังคลอด (Postpartum)">หอผู้ป่วยหลังคลอด</option>
+                  <option value="หอผู้ป่วยเด็ก (Pediatric Ward)">หอผู้ป่วยเด็ก</option>
+                  <option value="แผนกฉุกเฉิน (ER)">แผนกฉุกเฉิน (ER)</option>
+                </select>
+              </label>
+            </div>
+            <label>
+              รหัสเจ้าหน้าที่ / เบอร์โทรภายใน <small>(ไม่บังคับ)</small>
+              <input type="text" id="reporterCodeInput" placeholder="เช่น RN-10492 หรือ ต่อ 4201">
+            </label>
+          </fieldset>
+          <div class="profile-form-actions">
+            <button type="submit" class="primary-button" id="saveProfileBtn">💾 บันทึกและตั้งเป็นผู้รายงานปัจจุบัน</button>
+          </div>
+        </form>
+
+        <div class="saved-profiles-section" id="savedProfilesSection">
+          <h3>รายชื่อเจ้าหน้าที่ในเครื่องนี้ (แตะเพื่อสลับกะ/ผู้รายงาน)</h3>
+          <ul id="savedProfilesList" class="saved-profiles-list"></ul>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script src="app.js?v=20260829-v5"></script>
 </body>
 </html>

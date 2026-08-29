@@ -175,17 +175,25 @@ function buildLineMessage(payload) {
   const patientName = cleanText(payload.patientName, 80);
   const hn = maskIdentifier(payload.hn);
   const gestAge = cleanText(payload.gestAge, 40);
+  const reporter = payload.reporter && typeof payload.reporter === "object" ? payload.reporter : null;
+  const reporterName = reporter && reporter.name ? cleanText(reporter.name, 60) : "";
+  const reporterRole = reporter && reporter.role ? cleanText(reporter.role, 40) : "";
+  const reporterWard = reporter && reporter.ward ? cleanText(reporter.ward, 60) : "";
+  const reporterFull = reporterName ? `${reporterName}${reporterRole ? ` (${reporterRole})` : ""}` : "";
+
   const alerts = Array.isArray(payload.alerts) ? payload.alerts : [];
   const alertLines = alerts.slice(0, 8).map((item) => `- ${cleanText(item, 160)}`);
   const moreText = alerts.length > 8 ? [`- และอีก ${alerts.length - 8} รายการ`] : [];
   const lines = [
-    "Newborn NEWS Alert",
+    "🚨 Newborn NEWS Alert",
     `ระดับ: ${riskLabel}`,
     `คะแนนรวม: ${Number.isFinite(total) ? total : "-"}`,
     `เวลา: ${formatDisplayDate(payload.assessedAt)}`,
     patientName ? `ผู้ป่วย/เตียง: ${patientName}` : "",
     hn ? `HN: ${hn}` : "",
     gestAge ? `อายุครรภ์: ${gestAge}` : "",
+    reporterFull ? `ผู้รายงาน/ประเมิน: ${reporterFull}` : "",
+    reporterWard ? `หอผู้ป่วย: ${reporterWard}` : "",
     "ค่าผิดปกติ:",
     ...alertLines,
     ...moreText,
