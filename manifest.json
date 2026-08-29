@@ -1,0 +1,25 @@
+{
+  "name": "Newborn Early Warning Sign Score (NEWS)",
+  "short_name": "Newborn NEWS",
+  "description": "เว็บแอปคำนวณ Newborn Early Warning Sign Score พร้อมแจ้งเตือนค่าผิดปกติและบันทึกประวัติในเครื่อง",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f8fafc",
+  "theme_color": "#0f766e",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

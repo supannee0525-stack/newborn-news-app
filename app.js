@@ -387,15 +387,40 @@
     }
   }
 
-  function sendSystemNotification({ title, body, tag, requireInteraction = false, onClick = null }) {
+  async function sendSystemNotification({ title, body, tag, requireInteraction = false, data = null, onClick = null }) {
     if (typeof window === "undefined" || !("Notification" in window) || Notification.permission !== "granted") {
       return null;
     }
+
+    // 1. Try Service Worker first (Essential for mobile browsers and background notifications)
+    if ("serviceWorker" in navigator) {
+      try {
+        const reg = await navigator.serviceWorker.ready;
+        if (reg && typeof reg.showNotification === "function") {
+          await reg.showNotification(title, {
+            body,
+            icon: "icon-192.png",
+            badge: "icon-192.png",
+            tag: tag || "newborn-news-alert",
+            requireInteraction: Boolean(requireInteraction),
+            data: data || null
+          });
+          return true;
+        }
+      } catch (swErr) {
+        console.warn("ServiceWorker showNotification failed:", swErr);
+      }
+    }
+
+    // 2. Fallback to standard window.Notification (Desktop / direct tab)
     try {
       const notif = new Notification(title, {
         body,
+        icon: "icon-192.png",
+        badge: "icon-192.png",
         tag: tag || "newborn-news-alert",
-        requireInteraction: Boolean(requireInteraction)
+        requireInteraction: Boolean(requireInteraction),
+        data: data || null
       });
       notif.onclick = function () {
         if (typeof window.focus === "function") window.focus();
@@ -404,7 +429,7 @@
       };
       return notif;
     } catch (error) {
-      console.warn("Could not dispatch system notification:", error);
+      console.warn("Direct Notification constructor failed:", error);
       return null;
     }
   }
@@ -568,8 +593,31 @@
       if (event.key === "Escape" && !ui.alertModal.hidden) closeAlertPopup();
     });
 
+    const isIOS = typeof navigator !== "undefined" && /iPad|iPhone|iPod/.test(navigator.userAgent || "") && !window.MSStream;
+    const isStandalone = typeof window !== "undefined" && (Boolean(window.navigator.standalone) || (typeof window.matchMedia === "function" && window.matchMedia("(display-mode: standalone)").matches));
+
+    if (typeof navigator !== "undefined" && "serviceWorker" in navigator) {
+      navigator.serviceWorker.register("sw.js", { scope: "./" }).catch((err) => {
+        console.warn("SW register error:", err);
+      });
+
+      navigator.serviceWorker.addEventListener("message", (event) => {
+        if (event.data && event.data.type === "OPEN_ALERT" && event.data.data) {
+          openAlertPopup(event.data.data);
+        }
+      });
+    }
+
     function updateNotificationUI() {
       if (!ui.toggleNotifPermissionBtn || !ui.notificationStatusSub) return;
+
+      if (isIOS && !isStandalone) {
+        ui.toggleNotifPermissionBtn.textContent = "📱 ติดตั้งลงหน้าจอโฮมก่อน";
+        ui.toggleNotifPermissionBtn.className = "notif-btn";
+        ui.toggleNotifPermissionBtn.disabled = false;
+        ui.notificationStatusSub.innerHTML = "iPhone/iPad: แตะปุ่ม <strong>แชร์ (Share)</strong> ➔ <strong>'เพิ่มไปยังหน้าจอโฮม' (Add to Home Screen)</strong> เพื่อรับการแจ้งเตือนเตือนภัยบนมือถือ";
+        return;
+      }
 
       if (typeof window === "undefined" || !("Notification" in window)) {
         ui.toggleNotifPermissionBtn.textContent = "🔔 ไม่รองรับ OS Notification";
@@ -609,6 +657,11 @@
     }
 
     async function handleRequestPermission() {
+      if (isIOS && !isStandalone) {
+        window.alert("สำหรับ iPhone/iPad:\n\n1. แตะปุ่มแชร์ (ไอคอนสี่เหลี่ยมลูกศรชี้ขึ้น ด้านล่างของ Safari)\n2. เลือก 'เพิ่มไปยังหน้าจอโฮม' (Add to Home Screen)\n3. เปิดแอปจากไอคอนที่หน้าจอโฮม แล้วกดเปิดแจ้งเตือนอีกครั้งครับ");
+        return;
+      }
+
       if (typeof window === "undefined" || !("Notification" in window)) {
         showToast("บราวเซอร์นี้ไม่รองรับ System Notification");
         return;
