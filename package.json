@@ -1,0 +1,11 @@
+{
+  "name": "newborn-news-app",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Newborn Early Warning Sign Score calculator with optional LINE team alerts",
+  "scripts": {
+    "start": "node server.js",
+    "check": "node --check app.js && node --check server.js && node --check test-ui-cdp.js",
+    "test:ui": "node test-ui-cdp.js"
+  }
+}

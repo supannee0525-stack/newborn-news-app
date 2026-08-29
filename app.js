@@ -2,6 +2,7 @@
   "use strict";
 
   const STORAGE_KEY = "newborn-news-records-v1";
+  const ALERT_KEY_STORAGE_KEY = "newborn-news-alert-key";
 
   const RISK_LEVELS = [
     {
@@ -337,6 +338,7 @@
       riskSummary: document.getElementById("riskSummary"),
       recommendation: document.getElementById("recommendation"),
       alertList: document.getElementById("alertList"),
+      teamAlertStatus: document.getElementById("teamAlertStatus"),
       breakdownList: document.getElementById("breakdownList"),
       historyBody: document.getElementById("historyBody"),
       saveButton: document.getElementById("saveButton"),
@@ -368,9 +370,15 @@
 
     let currentResult = null;
     let toastTimer = null;
+    let teamAlertConfig = {
+      checked: false,
+      teamAlertAvailable: false,
+      requiresAlertKey: false
+    };
 
     fields.assessedAt.value = toDatetimeLocal(new Date());
     renderHistory();
+    loadTeamAlertConfig();
 
     form.addEventListener("submit", (event) => {
       event.preventDefault();
@@ -499,6 +507,7 @@
       if (showProblemToast && result.complete) {
         if (isEscalationRisk(result)) {
           showAlertBanner(result);
+          sendTeamAlert(result);
         } else if (result.alerts.length) {
           closeAlertBanner();
           closeAlertPopup();
@@ -570,6 +579,102 @@
       `;
       ui.alertList.innerHTML = `<li class="muted">ยังไม่มีข้อมูลผิดปกติ</li>`;
       ui.breakdownList.innerHTML = `<p class="muted">ยังไม่ได้คำนวณ</p>`;
+    }
+
+    async function loadTeamAlertConfig() {
+      try {
+        const response = await fetch("api/config", { cache: "no-store" });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        teamAlertConfig = await response.json();
+        if (teamAlertConfig.teamAlertAvailable) {
+          updateTeamAlertStatus("LINE Alert พร้อมส่งเข้ากลุ่มทีมงาน", "ready");
+        } else {
+          updateTeamAlertStatus("LINE Alert ยังไม่ได้เชื่อมกับกลุ่มทีมงาน", "warning");
+        }
+      } catch (error) {
+        teamAlertConfig.checked = false;
+        updateTeamAlertStatus("LINE Alert backend ยังไม่พร้อม", "warning");
+      }
+    }
+
+    function updateTeamAlertStatus(message, state) {
+      if (!ui.teamAlertStatus) return;
+      ui.teamAlertStatus.textContent = message;
+      ui.teamAlertStatus.className = `team-alert-status ${state || "waiting"}`;
+    }
+
+    async function sendTeamAlert(result, allowPrompt = true) {
+      const payload = buildTeamAlertPayload(result);
+      const headers = { "content-type": "application/json" };
+      const alertKey = localStorage.getItem(ALERT_KEY_STORAGE_KEY);
+
+      if (alertKey) {
+        headers["x-news-alert-key"] = alertKey;
+      }
+
+      try {
+        const response = await fetch("api/alerts", {
+          method: "POST",
+          headers,
+          body: JSON.stringify(payload)
+        });
+        const body = await response.json().catch(() => ({}));
+
+        if (response.ok && body.duplicate) {
+          updateTeamAlertStatus("LINE Alert: เคสนี้เคยส่งแล้วในช่วงสั้น ๆ", "ready");
+          return;
+        }
+
+        if (response.ok && body.sent) {
+          updateTeamAlertStatus("ส่ง LINE Alert เข้ากลุ่มทีมงานแล้ว", "ready");
+          showToast("ส่ง LINE Alert เข้ากลุ่มทีมงานแล้ว");
+          return;
+        }
+
+        if (response.status === 401 && allowPrompt) {
+          const newKey = window.prompt("กรอกรหัสทีมสำหรับส่ง LINE Alert");
+          if (newKey) {
+            localStorage.setItem(ALERT_KEY_STORAGE_KEY, newKey.trim());
+            await sendTeamAlert(result, false);
+            return;
+          }
+          updateTeamAlertStatus("LINE Alert ยังไม่ถูกส่ง: ต้องกรอกรหัสทีม", "error");
+          return;
+        }
+
+        if (response.status === 401) {
+          updateTeamAlertStatus("LINE Alert ยังไม่ถูกส่ง: รหัสทีมไม่ถูกต้อง", "error");
+          return;
+        }
+
+        if (response.status === 503 && body.error === "line_not_configured") {
+          updateTeamAlertStatus("LINE Alert ยังไม่ได้เชื่อม token/groupId", "warning");
+          showToast("แสดง Alert ในเครื่องแล้ว แต่ยังไม่ได้เชื่อม LINE");
+          return;
+        }
+
+        updateTeamAlertStatus("ส่ง LINE Alert ไม่สำเร็จ กรุณาแจ้งทีมด้วยวิธีสำรอง", "error");
+        showToast("ส่ง LINE ไม่สำเร็จ กรุณาแจ้งทีมด้วยวิธีสำรอง");
+      } catch (error) {
+        updateTeamAlertStatus("ส่ง LINE Alert ไม่สำเร็จ กรุณาแจ้งทีมด้วยวิธีสำรอง", "error");
+        showToast("ส่ง LINE ไม่สำเร็จ กรุณาแจ้งทีมด้วยวิธีสำรอง");
+      }
+    }
+
+    function buildTeamAlertPayload(result) {
+      const input = getInput();
+      return {
+        assessedAt: input.assessedAt ? new Date(input.assessedAt).toISOString() : new Date().toISOString(),
+        patientName: input.patientName,
+        hn: input.hn,
+        gestAge: input.gestAge,
+        total: result.total,
+        riskKey: result.risk.key,
+        riskLabel: result.risk.label,
+        action: result.risk.action,
+        frequency: result.risk.frequency,
+        alerts: result.alerts.map((item) => item.message)
+      };
     }
 
     function updateScorePill(key, detail) {
