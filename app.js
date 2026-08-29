@@ -480,6 +480,9 @@
       exportButton: document.getElementById("exportButton"),
       clearHistoryButton: document.getElementById("clearHistoryButton"),
       fillNowButton: document.getElementById("fillNowButton"),
+      fillNormalButton: document.getElementById("fillNormalButton"),
+      copySbarButton: document.getElementById("copySbarButton"),
+      modalCopySbarButton: document.getElementById("modalCopySbarButton"),
       mobileScore: document.getElementById("mobileScore"),
       mobileRisk: document.getElementById("mobileRisk"),
       mobileCalculateButton: document.getElementById("mobileCalculateButton"),
@@ -547,6 +550,88 @@
         currentResult = runCalculation(false);
       });
     });
+
+    function fillNormalPreset() {
+      fields.bt.value = "36.8";
+      fields.hr.value = "140";
+      fields.rr.value = "48";
+      fields.spo2.value = "98";
+      fields.breathing.value = "normal";
+      fields.neuroColor.value = "pink-alert";
+      if (!fields.assessedAt.value) {
+        fields.assessedAt.value = toDatetimeLocal(new Date());
+      }
+      currentResult = runCalculation(false);
+      showToast("⚡ กรอกค่าปกติเริ่มต้นเรียบร้อย (ปรับแก้เฉพาะค่าที่ผิดปกติได้ทันที)");
+    }
+
+    if (ui.fillNormalButton) {
+      ui.fillNormalButton.addEventListener("click", fillNormalPreset);
+    }
+
+    function generateSbarText(result) {
+      if (!result || !result.complete) return "";
+      const input = getInput();
+      const patient = input.patientName || (input.hn ? `HN ${input.hn}` : "ทารกแรกเกิด");
+      const time = input.assessedAt ? input.assessedAt.replace("T", " ") : "ไม่ระบุเวลา";
+      const ga = input.gestAge ? ` (GA: ${input.gestAge})` : "";
+      const prefix = result.risk.key === "high" ? "🚨 [HIGH RISK]" : result.risk.key === "medium" ? "⚠️ [MEDIUM RISK]" : "ℹ️ [NEWS]";
+
+      const lines = [
+        `${prefix} Newborn NEWS Report`,
+        `👶 ผู้ป่วย: ${patient}${ga}`,
+        `⏱ เวลาประเมิน: ${time}`,
+        `📊 คะแนนรวม: ${result.total} คะแนน (${result.risk.label})`,
+        `🩺 สัญญาณชีพ:`,
+        `• BT: ${input.bt || "-"} °C`,
+        `• HR: ${input.hr || "-"} /min`,
+        `• RR: ${input.rr || "-"} /min`,
+        `• SpO2: ${input.spo2 || "-"} %`,
+        `• การหายใจ: ${fields.breathing.options[fields.breathing.selectedIndex]?.text || "-"}`,
+        `• สีผิว/รู้สึกตัว: ${fields.neuroColor.options[fields.neuroColor.selectedIndex]?.text || "-"}`
+      ];
+
+      if (result.alerts && result.alerts.length > 0) {
+        lines.push(`⚠️ ค่าผิดปกติ:`);
+        result.alerts.forEach((alert) => lines.push(`• ${alert.message}`));
+      }
+
+      lines.push(`📋 แนวทาง: ${result.risk.action}`);
+      lines.push(`⏱ ความถี่ประเมินซ้ำ: ${result.risk.frequency}`);
+      return lines.join("\n");
+    }
+
+    async function copySbarSummary() {
+      if (!currentResult || !currentResult.complete) {
+        showToast("กรุณากรอกข้อมูลให้ครบและคำนวณคะแนนก่อนคัดลอก");
+        return;
+      }
+      const text = generateSbarText(currentResult);
+      try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          await navigator.clipboard.writeText(text);
+          showToast("📋 คัดลอกข้อความสรุป (SBAR) สำหรับส่ง LINE เรียบร้อยแล้ว");
+        } else {
+          const ta = document.createElement("textarea");
+          ta.value = text;
+          document.body.appendChild(ta);
+          ta.select();
+          document.execCommand("copy");
+          document.body.removeChild(ta);
+          showToast("📋 คัดลอกข้อความสรุปสำหรับส่ง LINE เรียบร้อยแล้ว");
+        }
+      } catch (err) {
+        console.warn("Clipboard copy failed:", err);
+        showToast("ไม่สามารถคัดลอกข้อความได้");
+      }
+    }
+
+    if (ui.copySbarButton) {
+      ui.copySbarButton.addEventListener("click", copySbarSummary);
+    }
+    if (ui.modalCopySbarButton) {
+      ui.modalCopySbarButton.addEventListener("click", copySbarSummary);
+    }
 
     ui.fillNowButton.addEventListener("click", () => {
       fields.assessedAt.value = toDatetimeLocal(new Date());
@@ -1039,6 +1124,7 @@
       const ready = Boolean(currentResult && currentResult.complete);
       ui.saveButton.disabled = !ready;
       ui.printButton.disabled = !ready;
+      if (ui.copySbarButton) ui.copySbarButton.disabled = !ready;
     }
 
     function openAlertPopup(result) {

@@ -56,7 +56,10 @@
             <p class="section-kicker">Assessment</p>
             <h2 id="formTitle">ข้อมูลประเมิน</h2>
           </div>
-          <button type="button" class="ghost-button" id="fillNowButton">เวลา ณ ตอนนี้</button>
+          <div class="panel-head-actions">
+            <button type="button" class="preset-button" id="fillNormalButton">⚡ ค่าปกติเริ่มต้น</button>
+            <button type="button" class="ghost-button" id="fillNowButton">เวลา ณ ตอนนี้</button>
+          </div>
         </div>
 
         <form id="newsForm" novalidate>
@@ -142,7 +145,8 @@
 
           <div class="actions">
             <button type="submit" class="primary-button">คำนวณคะแนน</button>
-            <button type="button" class="secondary-button" id="saveButton" disabled>บันทึกครั้งนี้</button>
+            <button type="button" class="secondary-button" id="copySbarButton" disabled>📋 ส่งเวร / LINE</button>
+            <button type="button" class="secondary-button" id="saveButton" disabled>บันทึกผล</button>
             <button type="button" class="ghost-button" id="printButton" disabled>พิมพ์ผล</button>
             <button type="reset" class="ghost-button">ล้างฟอร์ม</button>
           </div>
@@ -309,9 +313,10 @@
         <ul id="modalAlertList" class="modal-alert-list"></ul>
       </div>
       <div class="alert-dialog-actions">
+        <button type="button" class="primary-button" id="modalCopySbarButton">📋 คัดลอกสรุปส่ง LINE</button>
         <button type="button" class="secondary-button" id="modalSaveButton">บันทึกผลนี้</button>
         <button type="button" class="ghost-button" id="modalPrintButton">พิมพ์ผล</button>
-        <button type="button" class="primary-button" id="ackAlertButton">รับทราบ</button>
+        <button type="button" class="ghost-button" id="ackAlertButton">รับทราบ</button>
       </div>
     </section>
   </div>

@@ -264,6 +264,43 @@ h3 {
   border-bottom: 1px solid var(--soft-line);
 }
 
+.panel-head-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.preset-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 40px;
+  padding: 0 12px;
+  border: 1px solid #99f6e4;
+  border-radius: 6px;
+  background: #f0fdfa;
+  color: #0f766e;
+  font-size: 0.88rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 120ms ease-in-out;
+}
+
+.preset-button:hover,
+.preset-button:focus-visible {
+  background: #ccfbf1;
+  border-color: #5eead4;
+}
+
+.preset-button:active {
+  transform: scale(0.97);
+}
+
+button:active {
+  transform: scale(0.98);
+}
+
 form {
   padding: 20px;
 }
@@ -1137,6 +1174,44 @@ select:focus {
 
   .vital-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .notification-toolbar {
+    padding: 12px 14px;
+    margin-bottom: 14px;
+  }
+
+  .notification-status-group {
+    flex: 1 1 100%;
+    min-width: 0;
+  }
+
+  .notification-action-group {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .notif-btn {
+    justify-content: center;
+    padding: 10px 8px;
+    font-size: 0.84rem;
+  }
+
+  .panel-head-actions {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    margin-top: 6px;
+  }
+
+  .preset-button,
+  .panel-head-actions button {
+    flex: 1 1 auto;
+    justify-content: center;
+    font-size: 0.88rem;
   }
 
   .panel-head {
