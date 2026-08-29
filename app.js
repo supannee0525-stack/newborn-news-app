@@ -395,7 +395,7 @@
     const iconUrl = new URL("icon-192.png", window.location.href).href;
     const badgeUrl = new URL("icon-192.png", window.location.href).href;
 
-    const options = {
+    const baseOptions = {
       body,
       icon: iconUrl,
       badge: badgeUrl,
@@ -403,18 +403,30 @@
       requireInteraction: Boolean(requireInteraction),
       silent: false,
       vibrate: requireInteraction ? [300, 100, 300, 100, 350] : [200, 100, 200],
-      actions: [
-        { action: "view", title: "🔍 เปิดดูรายละเอียด" }
-      ],
       data: data || null
     };
 
     // 1. Try Service Worker first (Essential for mobile lockscreen notifications)
     if ("serviceWorker" in navigator) {
       try {
-        const reg = await navigator.serviceWorker.ready;
+        let reg = null;
+        if (navigator.serviceWorker.controller) {
+          reg = await Promise.race([
+            navigator.serviceWorker.ready,
+            new Promise((resolve) => setTimeout(() => resolve(null), 1000))
+          ]);
+        }
+        if (!reg) {
+          reg = await navigator.serviceWorker.getRegistration();
+        }
         if (reg && typeof reg.showNotification === "function") {
-          await reg.showNotification(title, options);
+          const swOptions = {
+            ...baseOptions,
+            actions: [
+              { action: "view", title: "🔍 เปิดดูรายละเอียด" }
+            ]
+          };
+          await reg.showNotification(title, swOptions);
           return true;
         }
       } catch (swErr) {
@@ -422,9 +434,9 @@
       }
     }
 
-    // 2. Fallback to direct Notification constructor (Desktop / direct tab)
+    // 2. Fallback to direct Notification constructor (DO NOT pass 'actions' to avoid mobile Chrome TypeError)
     try {
-      const notif = new Notification(title, options);
+      const notif = new Notification(title, baseOptions);
       notif.onclick = function () {
         if (typeof window.focus === "function") window.focus();
         if (typeof onClick === "function") onClick();
@@ -491,6 +503,7 @@
       toggleNotifPermissionBtn: document.getElementById("toggleNotifPermissionBtn"),
       toggleSoundBtn: document.getElementById("toggleSoundBtn"),
       testAlertBtn: document.getElementById("testAlertBtn"),
+      testDelayAlertBtn: document.getElementById("testDelayAlertBtn"),
       notificationStatusText: document.getElementById("notificationStatusText"),
       notificationStatusSub: document.getElementById("notificationStatusSub")
     };
@@ -704,28 +717,56 @@
     }
 
     if (ui.testAlertBtn) {
-      ui.testAlertBtn.addEventListener("click", () => {
+      ui.testAlertBtn.addEventListener("click", async () => {
         getAudioContext();
+        if (typeof window !== "undefined" && "Notification" in window && Notification.permission !== "granted") {
+          await handleRequestPermission();
+        }
         const mockTestResult = {
           complete: true,
           total: 8,
           risk: RISK_LEVELS[3],
           alerts: [
-            { score: 3, message: "HR > 200: 3 คะแนน" },
-            { score: 3, message: "SpO2 < 85: 3 คะแนน" },
-            { score: 2, message: "BT 38.1-38.9: 2 คะแนน" }
+            { score: 3, message: "HR > 200 (3 คะแนน)" },
+            { score: 3, message: "SpO2 < 85% (3 คะแนน)" },
+            { score: 2, message: "BT 38.1-38.9°C (2 คะแนน)" }
           ],
           criticalAlerts: [
-            { score: 3, message: "HR > 200: 3 คะแนน" },
-            { score: 3, message: "SpO2 < 85: 3 คะแนน" }
+            { score: 3, message: "HR > 200 (3 คะแนน)" },
+            { score: 3, message: "SpO2 < 85% (3 คะแนน)" }
           ],
           details: []
         };
         showAlertBanner(mockTestResult);
-        showToast("ส่งการแจ้งเตือนเข้า Lock Screen และหน้าจอแล้ว");
-        if (typeof window !== "undefined" && "Notification" in window && Notification.permission === "default") {
-          handleRequestPermission();
+        showToast("ส่งการแจ้งเตือนทดสอบเข้า Lock Screen และหน้าจอแล้ว");
+      });
+    }
+
+    if (ui.testDelayAlertBtn) {
+      ui.testDelayAlertBtn.addEventListener("click", async () => {
+        getAudioContext();
+        if (typeof window !== "undefined" && "Notification" in window && Notification.permission !== "granted") {
+          await handleRequestPermission();
         }
+        showToast("⏳ กำลังนับถอยหลัง 3 วินาที... ให้รีบพับหน้าจอหรือสลับแอปออกไปครับ!");
+        window.setTimeout(() => {
+          const mockTestResult = {
+            complete: true,
+            total: 8,
+            risk: RISK_LEVELS[3],
+            alerts: [
+              { score: 3, message: "HR > 200 (3 คะแนน)" },
+              { score: 3, message: "SpO2 < 85% (3 คะแนน)" },
+              { score: 2, message: "BT 38.1-38.9°C (2 คะแนน)" }
+            ],
+            criticalAlerts: [
+              { score: 3, message: "HR > 200 (3 คะแนน)" },
+              { score: 3, message: "SpO2 < 85% (3 คะแนน)" }
+            ],
+            details: []
+          };
+          showAlertBanner(mockTestResult);
+        }, 3000);
       });
     }
 
