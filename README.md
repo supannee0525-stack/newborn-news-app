@@ -8,8 +8,10 @@ Static web app for calculating a newborn early warning score from:
 - SpO2
 - Breathing pattern
 - Skin color / consciousness
+- Blood pressure (SBP, DBP, MAP, PP) against GA/DOL-specific targets
 
 The score ranges and escalation bands are transcribed from the user-provided NEWS chart image.
+Blood pressure targets are transcribed from the user-provided `ตาราง_BP_targets.xlsx` for GA 24-42 and DOL bands D1-3, D4-14, and >D14. Blood pressure status is shown separately and is not added to NEWS Score because the source table does not define a 0-3 score.
 
 ## Run locally
 
@@ -24,6 +26,8 @@ python3 -m http.server 8080
 - History is stored in the browser via `localStorage`.
 - History stays in the browser. When LINE alerts are enabled, Medium Risk and High Risk alert payloads are sent to the server so it can forward them to the team LINE group.
 - The urgent in-app alert appears first as a mobile-style top notification banner for Medium Risk (5-6) and High Risk (7+). Tapping the banner opens the detailed popup.
+- A blood pressure value below its GA/DOL target also opens a local alert and is included in Medium/High LINE summaries.
+- Source-data guard: GA 36 / D4-14 SBP is disabled pending clinical confirmation because the source file says 36 mmHg while MAP is 44 mmHg.
 - This is a calculation aid only. Confirm thresholds and escalation policy with the clinical unit before real clinical use.
 
 ## LINE alert option

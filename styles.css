@@ -415,6 +415,48 @@ legend {
   color: var(--ink-secondary);
 }
 
+legend small {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.bp-fieldset {
+  padding-top: 18px;
+  border-top: 1px solid var(--soft-line);
+}
+
+.bp-target-summary,
+.bp-status-summary {
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: #f8fafc;
+  color: var(--ink-secondary);
+  font-size: 0.84rem;
+  font-weight: 700;
+  line-height: 1.5;
+}
+
+.bp-status-summary {
+  margin: 12px 0 0;
+}
+
+.bp-target-summary.normal,
+.bp-status-summary.normal {
+  border-color: #a7f3d0;
+  background: #ecfdf5;
+  color: #047857;
+}
+
+.bp-target-summary.warning,
+.bp-status-summary.warning {
+  border-color: #fecaca;
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
 .patient-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -548,6 +590,19 @@ input::placeholder {
 }
 
 .score-pill.score-3 {
+  background: #fef2f2;
+  color: #b91c1c;
+  border: 1px solid #fca5a5;
+  animation: pulse-border 2s infinite;
+}
+
+.score-pill.bp-normal {
+  background: #ecfdf5;
+  color: #047857;
+  border: 1px solid #a7f3d0;
+}
+
+.score-pill.bp-low {
   background: #fef2f2;
   color: #b91c1c;
   border: 1px solid #fca5a5;
@@ -701,6 +756,12 @@ input::placeholder {
   color: var(--high);
   border: 1.5px solid var(--high-border);
   box-shadow: 0 0 12px var(--high-glow);
+}
+
+.risk-badge.bp-alert {
+  color: #b91c1c;
+  background: #fef2f2;
+  border-color: #fca5a5;
 }
 
 .score-display {

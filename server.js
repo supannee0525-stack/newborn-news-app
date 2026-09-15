@@ -175,6 +175,7 @@ function buildLineMessage(payload) {
   const patientName = cleanText(payload.patientName, 80);
   const hn = maskIdentifier(payload.hn);
   const gestAge = cleanText(payload.gestAge, 40);
+  const dol = cleanText(payload.dol, 12);
   const attendingDoctor = cleanText(payload.attendingDoctor, 80);
   const reporter = payload.reporter && typeof payload.reporter === "object" ? payload.reporter : null;
   const reporterName = reporter && reporter.name ? cleanText(reporter.name, 60) : "";
@@ -193,6 +194,7 @@ function buildLineMessage(payload) {
     patientName ? `ผู้ป่วย/เตียง: ${patientName}` : "",
     hn ? `HN: ${hn}` : "",
     gestAge ? `อายุครรภ์: ${gestAge}` : "",
+    dol ? `DOL: ${dol}` : "",
     attendingDoctor ? `แพทย์เจ้าของไข้: ${attendingDoctor}` : "",
     reporterFull ? `ผู้รายงาน/ประเมิน: ${reporterFull}` : "",
     reporterWard ? `หอผู้ป่วย: ${reporterWard}` : "",

@@ -106,6 +106,41 @@
     }
   };
 
+  const BP_METRICS = {
+    sbp: { label: "SBP", max: 250 },
+    dbp: { label: "DBP", max: 200 },
+    map: { label: "MAP", max: 200 },
+    pp: { label: "PP", max: 200 }
+  };
+
+  const BP_TARGETS = {
+    24: { d1_3: [34, 21, 25, 10], d4_14: [41, 22, 28, 14], gt14: [45, 24, 31, 15] },
+    25: { d1_3: [35, 22, 26, 10], d4_14: [44, 23, 30, 14], gt14: [47, 25, 32, 15] },
+    26: { d1_3: [36, 23, 27, 10], d4_14: [45, 24, 31, 15], gt14: [48, 26, 33, 16] },
+    27: { d1_3: [37, 24, 28, 10], d4_14: [47, 25, 32, 15], gt14: [49, 27, 34, 16] },
+    28: { d1_3: [39, 25, 30, 11], d4_14: [48, 26, 33, 16], gt14: [51, 28, 36, 17] },
+    29: { d1_3: [41, 26, 31, 11], d4_14: [49, 27, 34, 16], gt14: [54, 29, 37, 19] },
+    30: { d1_3: [43, 27, 32, 11], d4_14: [51, 28, 36, 17], gt14: [55, 30, 38, 19] },
+    31: { d1_3: [44, 28, 33, 12], d4_14: [54, 29, 37, 19], gt14: [57, 31, 40, 19] },
+    32: { d1_3: [45, 29, 34, 12], d4_14: [55, 30, 38, 19], gt14: [59, 32, 41, 20] },
+    33: { d1_3: [46, 30, 35, 12], d4_14: [57, 31, 40, 19], gt14: [61, 33, 43, 20] },
+    34: { d1_3: [48, 31, 37, 12], d4_14: [59, 32, 41, 20], gt14: [63, 34, 44, 20] },
+    35: { d1_3: [49, 32, 38, 12], d4_14: [61, 33, 43, 20], gt14: [65, 35, 45, 20] },
+    36: { d1_3: [51, 33, 39, 12], d4_14: [null, 34, 44, 20], gt14: [67, 36, 47, 20] },
+    37: { d1_3: [52, 34, 40, 12], d4_14: [65, 35, 45, 20], gt14: [69, 37, 48, 20] },
+    38: { d1_3: [54, 35, 41, 14], d4_14: [67, 36, 47, 20], gt14: [71, 38, 48, 23] },
+    39: { d1_3: [55, 36, 42, 14], d4_14: [69, 37, 48, 20], gt14: [72, 39, 50, 23] },
+    40: { d1_3: [56, 37, 43, 14], d4_14: [71, 38, 48, 23], gt14: [73, 40, 51, 23] },
+    41: { d1_3: [58, 38, 45, 14], d4_14: [72, 39, 50, 23], gt14: [74, 41, 52, 23] },
+    42: { d1_3: [59, 39, 46, 14], d4_14: [73, 40, 51, 23], gt14: [77, 42, 53, 23] }
+  };
+
+  const BP_PERIODS = {
+    d1_3: "D1-3",
+    d4_14: "D4-14",
+    gt14: "> D14"
+  };
+
   const SELECT_FIELDS = {
     breathing: {
       label: "ลักษณะการหายใจ",
@@ -235,6 +270,94 @@
     };
   }
 
+  function parseGestationalWeek(rawValue) {
+    const match = String(rawValue ?? "").trim().match(/^(\d{2})(?:\s*\+\s*[0-6])?(?:\s*(?:wk|wks|weeks?))?$/i);
+    return match ? Number(match[1]) : null;
+  }
+
+  function getBPPeriod(dol) {
+    if (dol <= 3) return "d1_3";
+    if (dol <= 14) return "d4_14";
+    return "gt14";
+  }
+
+  function getBloodPressureTarget(gestAgeRaw, dolRaw) {
+    const gestAge = parseGestationalWeek(gestAgeRaw);
+    const dol = Number(dolRaw);
+
+    if (gestAge === null || !Number.isInteger(gestAge) || !BP_TARGETS[gestAge]) {
+      return { status: "invalid", message: "อายุครรภ์ต้องอยู่ในช่วง 24-42 สัปดาห์ เช่น 30 หรือ 30+2" };
+    }
+    if (dolRaw === "" || dolRaw === null || dolRaw === undefined || !Number.isInteger(dol) || dol < 1 || dol > 365) {
+      return { status: "invalid", message: "DOL ต้องเป็นจำนวนวัน 1-365" };
+    }
+
+    const periodKey = getBPPeriod(dol);
+    const values = BP_TARGETS[gestAge][periodKey];
+    const target = {};
+    Object.keys(BP_METRICS).forEach((key, index) => {
+      target[key] = values[index];
+    });
+
+    return { status: "ok", gestAge, dol, periodKey, periodLabel: BP_PERIODS[periodKey], target };
+  }
+
+  function calculateBloodPressure(input) {
+    const targetResult = getBloodPressureTarget(input.gestAge, input.dol);
+    if (targetResult.status !== "ok") {
+      return { complete: false, ...targetResult, details: [], alerts: [], problems: [{ status: "invalid", message: targetResult.message }] };
+    }
+
+    const details = Object.entries(BP_METRICS).map(([key, metric]) => {
+      const rawValue = input[key];
+      const value = Number(rawValue);
+      const target = targetResult.target[key];
+
+      if (rawValue === "" || rawValue === null || rawValue === undefined) {
+        return { key, label: metric.label, status: "missing", value: "", target, message: `${metric.label}: กรุณากรอกค่า` };
+      }
+      if (!Number.isFinite(value) || value < 0 || value > metric.max) {
+        return { key, label: metric.label, status: "invalid", value: rawValue, target, message: `${metric.label}: ตรวจค่าที่กรอก (0-${metric.max} mmHg)` };
+      }
+      if (target === null) {
+        return {
+          key,
+          label: metric.label,
+          status: "invalid",
+          value,
+          target,
+          message: "SBP: เกณฑ์ GA 36, D4-14 ในเอกสารต้นฉบับต้องยืนยันก่อนใช้งาน"
+        };
+      }
+
+      const isLow = value < target;
+      return {
+        key,
+        label: metric.label,
+        category: "blood-pressure",
+        score: null,
+        status: isLow ? "low" : "normal",
+        value,
+        target,
+        displayValue: `${value} mmHg`,
+        rule: `Target ≥ ${target} mmHg`,
+        message: isLow
+          ? `${metric.label} ${value} mmHg ต่ำกว่า Target ${target} mmHg (GA ${targetResult.gestAge}, ${targetResult.periodLabel})`
+          : `${metric.label} ${value} mmHg อยู่ใน Target ≥ ${target} mmHg`
+      };
+    });
+
+    const problems = details.filter((item) => item.status === "missing" || item.status === "invalid");
+    const complete = problems.length === 0;
+    return {
+      complete,
+      ...targetResult,
+      details,
+      alerts: complete ? details.filter((item) => item.status === "low") : [],
+      problems
+    };
+  }
+
   function calculateNEWS(input) {
     const details = [
       scoreNumeric("bt", input.bt),
@@ -244,12 +367,13 @@
       scoreSelect("breathing", input.breathing),
       scoreSelect("neuroColor", input.neuroColor)
     ];
+    const bloodPressure = calculateBloodPressure(input);
 
-    const problems = details.filter((item) => item.status !== "ok");
+    const problems = [...details.filter((item) => item.status !== "ok"), ...bloodPressure.problems];
     const complete = problems.length === 0;
     const total = complete ? details.reduce((sum, item) => sum + item.score, 0) : null;
     const risk = complete ? getRisk(total) : null;
-    const alerts = complete ? details.filter((item) => item.score > 0) : [];
+    const alerts = complete ? [...details.filter((item) => item.score > 0), ...bloodPressure.alerts] : [];
     const criticalAlerts = complete ? details.filter((item) => item.score === 3) : [];
 
     return {
@@ -257,6 +381,7 @@
       total,
       risk,
       details,
+      bloodPressure,
       alerts,
       criticalAlerts,
       problems
@@ -265,6 +390,14 @@
 
   function isEscalationRisk(result) {
     return Boolean(result?.complete && (result.risk?.key === "medium" || result.risk?.key === "high"));
+  }
+
+  function hasBloodPressureAlert(result) {
+    return Boolean(result?.complete && result.bloodPressure?.alerts?.length);
+  }
+
+  function shouldShowLocalAlert(result) {
+    return isEscalationRisk(result) || hasBloodPressureAlert(result);
   }
 
   function getEscalationCopy(result) {
@@ -283,6 +416,13 @@
       return {
         title: "เสี่ยงปานกลาง: แจ้งเจ้าหน้าที่ทันที",
         description: `คะแนนรวม ${result.total} คะแนน เข้าเกณฑ์เสี่ยงปานกลาง ต้องแจ้งแพทย์และเจ้าหน้าที่เกี่ยวข้องทันที${criticalText}`
+      };
+    }
+
+    if (hasBloodPressureAlert(result)) {
+      return {
+        title: "ความดันต่ำกว่า Target",
+        description: `พบค่าความดัน ${result.bloodPressure.alerts.length} รายการต่ำกว่า Target สำหรับ GA ${result.bloodPressure.gestAge}, ${result.bloodPressure.periodLabel} กรุณาทวนค่าและประเมินตามแนวทางหน่วยงาน`
       };
     }
 
@@ -457,12 +597,17 @@
       patientName: document.getElementById("patientName"),
       hn: document.getElementById("hn"),
       gestAge: document.getElementById("gestAge"),
+      dol: document.getElementById("dol"),
       attendingDoctor: document.getElementById("attendingDoctor"),
       assessedAt: document.getElementById("assessedAt"),
       bt: document.getElementById("bt"),
       hr: document.getElementById("hr"),
       rr: document.getElementById("rr"),
       spo2: document.getElementById("spo2"),
+      sbp: document.getElementById("sbp"),
+      dbp: document.getElementById("dbp"),
+      map: document.getElementById("map"),
+      pp: document.getElementById("pp"),
       breathing: document.getElementById("breathing"),
       neuroColor: document.getElementById("neuroColor")
     };
@@ -476,6 +621,8 @@
       recommendation: document.getElementById("recommendation"),
       alertList: document.getElementById("alertList"),
       teamAlertStatus: document.getElementById("teamAlertStatus"),
+      bpTargetSummary: document.getElementById("bpTargetSummary"),
+      bpStatusSummary: document.getElementById("bpStatusSummary"),
       breakdownList: document.getElementById("breakdownList"),
       historyBody: document.getElementById("historyBody"),
       saveButton: document.getElementById("saveButton"),
@@ -738,6 +885,7 @@
         closeAlertPopup();
         Object.keys(NUMERIC_FIELDS).forEach((key) => updateScorePill(key, null));
         Object.keys(SELECT_FIELDS).forEach((key) => updateScorePill(key, null));
+        Object.keys(BP_METRICS).forEach((key) => updateBPStatusPill(key, null));
       }, 0);
     });
 
@@ -774,11 +922,13 @@
       const patient = input.patientName || (input.hn ? `HN ${input.hn}` : "ทารกแรกเกิด");
       const time = input.assessedAt ? input.assessedAt.replace("T", " ") : "ไม่ระบุเวลา";
       const ga = input.gestAge ? ` (GA: ${input.gestAge})` : "";
-      const prefix = result.risk.key === "high" ? "🚨 [HIGH RISK]" : result.risk.key === "medium" ? "⚠️ [MEDIUM RISK]" : "ℹ️ [NEWS]";
+      const dol = input.dol ? ` • DOL ${input.dol}` : "";
+      const bpOnlyAlert = hasBloodPressureAlert(result) && !isEscalationRisk(result);
+      const prefix = result.risk.key === "high" ? "🚨 [HIGH RISK]" : result.risk.key === "medium" ? "⚠️ [MEDIUM RISK]" : bpOnlyAlert ? "⚠️ [BP ALERT]" : "ℹ️ [NEWS]";
 
       const lines = [
         `${prefix} Newborn NEWS Report`,
-        `👶 ผู้ป่วย: ${patient}${ga}`,
+        `👶 ผู้ป่วย: ${patient}${ga}${dol}`,
         `⏱ เวลาประเมิน: ${time}`,
         `📊 คะแนนรวม: ${result.total} คะแนน (${result.risk.label})`,
         `🩺 สัญญาณชีพ:`,
@@ -786,6 +936,7 @@
         `• HR: ${input.hr || "-"} /min`,
         `• RR: ${input.rr || "-"} /min`,
         `• SpO2: ${input.spo2 || "-"} %`,
+        `• BP: ${input.sbp || "-"}/${input.dbp || "-"} mmHg • MAP ${input.map || "-"} • PP ${input.pp || "-"}`,
         `• การหายใจ: ${fields.breathing.options[fields.breathing.selectedIndex]?.text || "-"}`,
         `• สีผิว/รู้สึกตัว: ${fields.neuroColor.options[fields.neuroColor.selectedIndex]?.text || "-"}`
       ];
@@ -795,8 +946,8 @@
         result.alerts.forEach((alert) => lines.push(`• ${alert.message}`));
       }
 
-      lines.push(`📋 แนวทาง: ${result.risk.action}`);
-      lines.push(`⏱ ความถี่ประเมินซ้ำ: ${result.risk.frequency}`);
+      lines.push(`📋 แนวทาง: ${bpOnlyAlert ? "ทวนการวัดความดันและแจ้งพยาบาล/แพทย์ผู้รับผิดชอบตามแนวทางหน่วยงาน" : result.risk.action}`);
+      lines.push(`⏱ ความถี่ประเมินซ้ำ: ${bpOnlyAlert ? "ตามแนวทางของหน่วยงาน" : result.risk.frequency}`);
 
       if (input.attendingDoctor) {
         lines.push(`👨‍⚕️ แพทย์เจ้าของไข้/ผู้ดูแล: ${input.attendingDoctor}`);
@@ -883,7 +1034,7 @@
     ui.closeAlertButton.addEventListener("click", closeAlertPopup);
     ui.ackAlertButton.addEventListener("click", closeAlertPopup);
     ui.alertBanner.addEventListener("click", () => {
-      if (currentResult && isEscalationRisk(currentResult)) {
+      if (currentResult && shouldShowLocalAlert(currentResult)) {
         openAlertPopup(currentResult);
       }
     });
@@ -942,7 +1093,7 @@
       if (permission === "granted") {
         ui.toggleNotifPermissionBtn.textContent = "✅ เปิดแจ้งเตือนหน้าจอแล้ว";
         ui.toggleNotifPermissionBtn.className = "notif-btn active";
-        ui.notificationStatusSub.textContent = "ระบบจะเด้ง Notification บนหน้าจอของเครื่องและเปิด Banner เมื่อพบความเสี่ยง Medium / High";
+        ui.notificationStatusSub.textContent = "ระบบจะเด้ง Notification และเปิด Banner เมื่อพบความเสี่ยง Medium / High หรือความดันต่ำกว่า Target";
       } else if (permission === "denied") {
         ui.toggleNotifPermissionBtn.textContent = "❌ บราวเซอร์ปิดกั้นแจ้งเตือน";
         ui.toggleNotifPermissionBtn.className = "notif-btn muted-state";
@@ -984,7 +1135,7 @@
           showToast("เปิดการแจ้งเตือนหน้าจอเรียบร้อยแล้ว");
           sendSystemNotification({
             title: "Newborn NEWS: ระบบแจ้งเตือนพร้อมใช้งาน",
-            body: "จะมีการแจ้งเตือนบนหน้าจอเมื่อพบผู้ป่วยมีความเสี่ยง Medium หรือ High Risk",
+            body: "จะแจ้งเตือนเมื่อพบ Medium / High Risk หรือความดันต่ำกว่า Target",
             tag: "newborn-news-setup-ok"
           });
         } else if (permission === "denied") {
@@ -1099,12 +1250,17 @@
         patientName: fields.patientName.value.trim(),
         hn: fields.hn.value.trim(),
         gestAge: fields.gestAge.value.trim(),
+        dol: fields.dol.value,
         attendingDoctor: fields.attendingDoctor ? fields.attendingDoctor.value.trim() : "",
         assessedAt: fields.assessedAt.value,
         bt: fields.bt.value,
         hr: fields.hr.value,
         rr: fields.rr.value,
         spo2: fields.spo2.value,
+        sbp: fields.sbp.value,
+        dbp: fields.dbp.value,
+        map: fields.map.value,
+        pp: fields.pp.value,
         breathing: fields.breathing.value,
         neuroColor: fields.neuroColor.value
       };
@@ -1130,9 +1286,9 @@
       }
 
       if (showProblemToast && result.complete) {
-        if (isEscalationRisk(result)) {
+        if (shouldShowLocalAlert(result)) {
           showAlertBanner(result);
-          sendTeamAlert(result);
+          if (isEscalationRisk(result)) sendTeamAlert(result);
         } else if (result.alerts.length) {
           closeAlertBanner();
           closeAlertPopup();
@@ -1149,6 +1305,7 @@
 
     function renderResult(result) {
       result.details.forEach((detail) => updateScorePill(detail.key, detail));
+      renderBloodPressure(result.bloodPressure);
 
       if (!result.complete) {
         const missingCount = result.problems.filter((item) => item.status === "missing").length;
@@ -1171,18 +1328,23 @@
       }
 
       const risk = result.risk;
+      const bpAlertCount = result.bloodPressure.alerts.length;
+      const bpOnlyAlert = bpAlertCount > 0 && !isEscalationRisk(result);
+      const displayRisk = bpAlertCount ? `${risk.label} • BP ต่ำกว่า Target` : risk.label;
       ui.headerScore.textContent = result.total;
-      ui.headerRisk.textContent = risk.label;
+      ui.headerRisk.textContent = displayRisk;
       ui.mobileScore.textContent = result.total;
-      ui.mobileRisk.textContent = risk.label;
+      ui.mobileRisk.textContent = displayRisk;
       ui.totalScore.textContent = result.total;
-      ui.riskSummary.textContent = `คะแนนรวม ${result.total} คะแนน: ${risk.label}`;
-      ui.riskBadge.textContent = risk.label;
-      ui.riskBadge.className = `risk-badge ${risk.key}`;
+      ui.riskSummary.textContent = bpAlertCount
+        ? `NEWS ${result.total} คะแนน: ${risk.label} • BP ต่ำกว่า Target ${bpAlertCount} ค่า`
+        : `คะแนนรวม ${result.total} คะแนน: ${risk.label}`;
+      ui.riskBadge.textContent = displayRisk;
+      ui.riskBadge.className = `risk-badge ${bpOnlyAlert ? "bp-alert" : risk.key}`;
       ui.recommendation.innerHTML = `
         <h3>แนวทางตอบสนอง</h3>
-        <p>${risk.action}</p>
-        <span>ความถี่ประเมินซ้ำ: ${risk.frequency}</span>
+        <p>${bpOnlyAlert ? "ทวนการวัดความดันและแจ้งพยาบาล/แพทย์ผู้รับผิดชอบตามแนวทางหน่วยงาน" : risk.action}</p>
+        <span>${bpOnlyAlert ? "ประเมินซ้ำตามแนวทางของหน่วยงาน" : `ความถี่ประเมินซ้ำ: ${risk.frequency}`}</span>
       `;
       renderAlerts(result);
       renderBreakdown(result.details);
@@ -1204,6 +1366,14 @@
       `;
       ui.alertList.innerHTML = `<li class="muted">ยังไม่มีข้อมูลผิดปกติ</li>`;
       ui.breakdownList.innerHTML = `<p class="muted">ยังไม่ได้คำนวณ</p>`;
+      if (ui.bpTargetSummary) {
+        ui.bpTargetSummary.textContent = "กรอกอายุครรภ์และ DOL เพื่อดูค่า Target";
+        ui.bpTargetSummary.className = "bp-target-summary waiting";
+      }
+      if (ui.bpStatusSummary) {
+        ui.bpStatusSummary.textContent = "ยังไม่ได้ประเมินความดัน";
+        ui.bpStatusSummary.className = "bp-status-summary waiting";
+      }
     }
 
     async function loadTeamAlertConfig() {
@@ -1294,6 +1464,7 @@
         patientName: input.patientName,
         hn: input.hn,
         gestAge: input.gestAge,
+        dol: input.dol,
         attendingDoctor: input.attendingDoctor || "",
         total: result.total,
         riskKey: result.risk.key,
@@ -1327,6 +1498,55 @@
       pill.className = `score-pill score-${detail.score}`;
     }
 
+    function updateBPStatusPill(key, detail) {
+      const pill = document.getElementById(`${key}Status`);
+      if (!pill) return;
+      if (!detail) {
+        pill.textContent = "รอข้อมูล";
+        pill.className = "score-pill pending";
+        return;
+      }
+      if (detail.status === "missing" || detail.status === "invalid") {
+        pill.textContent = detail.status === "missing" ? "รอข้อมูล" : "ตรวจค่า";
+        pill.className = `score-pill ${detail.status === "invalid" ? "invalid" : "pending"}`;
+        return;
+      }
+      pill.textContent = detail.status === "low" ? `ต่ำกว่า ${detail.target}` : `ปกติ ≥ ${detail.target}`;
+      pill.className = `score-pill ${detail.status === "low" ? "bp-low" : "bp-normal"}`;
+    }
+
+    function renderBloodPressure(result) {
+      Object.keys(BP_METRICS).forEach((key) => {
+        updateBPStatusPill(key, result?.details?.find((item) => item.key === key) || null);
+      });
+
+      if (!result || result.status !== "ok") {
+        ui.bpTargetSummary.textContent = result?.message || "กรอกอายุครรภ์และ DOL เพื่อดูค่า Target";
+        ui.bpTargetSummary.className = "bp-target-summary warning";
+        ui.bpStatusSummary.textContent = "ยังไม่สามารถประเมินความดันได้";
+        ui.bpStatusSummary.className = "bp-status-summary waiting";
+        return;
+      }
+
+      const targetParts = Object.keys(BP_METRICS).map((key) => {
+        const value = result.target[key];
+        return `${BP_METRICS[key].label} ≥ ${value === null ? "รอยืนยัน" : value}`;
+      });
+      ui.bpTargetSummary.textContent = `Target GA ${result.gestAge} • ${result.periodLabel}: ${targetParts.join(" | ")} mmHg`;
+      ui.bpTargetSummary.className = `bp-target-summary ${result.complete ? "normal" : "warning"}`;
+
+      if (!result.complete) {
+        ui.bpStatusSummary.textContent = result.problems[0]?.message || "กรอกข้อมูลความดันให้ครบ";
+        ui.bpStatusSummary.className = "bp-status-summary warning";
+      } else if (result.alerts.length) {
+        ui.bpStatusSummary.textContent = `ผิดปกติ: พบ ${result.alerts.length} ค่าต่ำกว่า Target`;
+        ui.bpStatusSummary.className = "bp-status-summary warning";
+      } else {
+        ui.bpStatusSummary.textContent = "ปกติ: ค่าความดันทั้ง 4 ค่าไม่ต่ำกว่า Target";
+        ui.bpStatusSummary.className = "bp-status-summary normal";
+      }
+    }
+
     function renderAlerts(result) {
       const alerts = result.alerts;
       const criticalAlerts = result.criticalAlerts;
@@ -1337,7 +1557,7 @@
       }
 
       const items = alerts.map((item) => {
-        const className = item.score === 3 ? "alert-high" : item.score === 2 ? "alert-medium" : "alert-low";
+        const className = item.category === "blood-pressure" || item.score === 3 ? "alert-high" : item.score === 2 ? "alert-medium" : "alert-low";
         return `<li class="${className}">${escapeHtml(item.message)}</li>`;
       });
 
@@ -1381,33 +1601,38 @@
     function showAlertBanner(result) {
       const escalationCopy = getEscalationCopy(result);
       const patientText = getPatientDisplayText();
-      const keyAlert = result.criticalAlerts[0] || result.alerts[0];
+      const keyAlert = isEscalationRisk(result)
+        ? result.criticalAlerts[0] || result.alerts[0]
+        : result.bloodPressure.alerts[0];
       const alertText = keyAlert ? keyAlert.message : result.risk.action;
+      const alertTone = result.risk.key === "high" ? "high" : "medium";
 
       renderAlertPopupContent(result);
       closeAlertPopup();
       ui.bannerTime.textContent = "เมื่อสักครู่";
       ui.bannerTitle.textContent = `${escalationCopy.title} • NEWS ${result.total}`;
       ui.bannerMessage.textContent = `${patientText}: ${alertText}`;
-      ui.alertBanner.className = `alert-banner ${result.risk.key}`;
+      ui.alertBanner.className = `alert-banner ${alertTone}`;
       ui.alertBanner.hidden = false;
       window.requestAnimationFrame(() => {
         ui.alertBanner.classList.add("show");
       });
 
-      playAlertSound(result.risk.key, soundEnabled);
-      triggerVibration(result.risk.key);
+      playAlertSound(alertTone, soundEnabled);
+      triggerVibration(alertTone);
 
       const notifTitle = result.risk.key === "high"
         ? `🚨 เสี่ยงสูง NEWS ${result.total}: ${patientText}`
-        : `⚠️ เสี่ยงปานกลาง NEWS ${result.total}: ${patientText}`;
+        : result.risk.key === "medium"
+          ? `⚠️ เสี่ยงปานกลาง NEWS ${result.total}: ${patientText}`
+          : `⚠️ ความดันต่ำกว่า Target: ${patientText}`;
 
       const notifBody = `${alertText} • ${result.risk.action}`;
 
       sendSystemNotification({
         title: notifTitle,
         body: notifBody,
-        tag: `newborn-news-${patientText}-${result.risk.key}`,
+        tag: `newborn-news-${patientText}-${result.risk.key}-${hasBloodPressureAlert(result) ? "bp-low" : "news"}`,
         requireInteraction: result.risk.key === "high",
         data: result,
         onClick: () => openAlertPopup(result)
@@ -1416,12 +1641,17 @@
 
     function renderAlertPopupContent(result) {
       const escalationCopy = getEscalationCopy(result);
+      const bpOnlyAlert = hasBloodPressureAlert(result) && !isEscalationRisk(result);
       ui.alertTitle.textContent = escalationCopy.title;
       ui.modalScore.textContent = result.total;
       ui.modalRisk.textContent = result.risk.label;
       ui.alertDescription.textContent = escalationCopy.description;
-      ui.modalAction.textContent = result.risk.action;
-      ui.modalFrequency.textContent = `ความถี่ประเมินซ้ำ: ${result.risk.frequency}`;
+      ui.modalAction.textContent = bpOnlyAlert
+        ? "ทวนการวัดความดันและแจ้งพยาบาล/แพทย์ผู้รับผิดชอบตามแนวทางหน่วยงาน"
+        : result.risk.action;
+      ui.modalFrequency.textContent = bpOnlyAlert
+        ? "ประเมินซ้ำตามแนวทางของหน่วยงาน"
+        : `ความถี่ประเมินซ้ำ: ${result.risk.frequency}`;
       ui.modalAlertList.innerHTML = result.alerts.map((item) => `<li>${escapeHtml(item.message)}</li>`).join("");
     }
 
@@ -1460,11 +1690,17 @@
         patientName: input.patientName,
         hn: input.hn,
         gestAge: input.gestAge,
+        dol: Number(input.dol),
         attendingDoctor: input.attendingDoctor || "",
         bt: Number(input.bt),
         hr: Number(input.hr),
         rr: Number(input.rr),
         spo2: Number(input.spo2),
+        sbp: Number(input.sbp),
+        dbp: Number(input.dbp),
+        map: Number(input.map),
+        pp: Number(input.pp),
+        bpPeriod: result.bloodPressure.periodLabel,
         breathing: result.details.find((item) => item.key === "breathing")?.displayValue || "",
         neuroColor: result.details.find((item) => item.key === "neuroColor")?.displayValue || "",
         total: result.total,
@@ -1502,7 +1738,7 @@
       ui.clearHistoryButton.disabled = records.length === 0;
 
       if (!records.length) {
-        ui.historyBody.innerHTML = `<tr><td colspan="8" class="empty-row">ยังไม่มีประวัติที่บันทึก</td></tr>`;
+        ui.historyBody.innerHTML = `<tr><td colspan="12" class="empty-row">ยังไม่มีประวัติที่บันทึก</td></tr>`;
         return;
       }
 
@@ -1518,7 +1754,7 @@
           <td>${escapeHtml(formatDisplayDate(record.assessedAt))}</td>
           <td>
             <strong>${escapeHtml(record.patientName || "ไม่ระบุ")}</strong>
-            <br><span class="muted">${escapeHtml(record.hn || "-")}${record.gestAge ? ` • ${escapeHtml(record.gestAge)}` : ""}</span>
+            <br><span class="muted">${escapeHtml(record.hn || "-")}${record.gestAge ? ` • GA ${escapeHtml(record.gestAge)}` : ""}${record.dol ? ` • DOL ${escapeHtml(record.dol)}` : ""}</span>
             ${doctorText}
             ${reporterText}
           </td>
@@ -1526,6 +1762,10 @@
           <td>${escapeHtml(record.hr)}</td>
           <td>${escapeHtml(record.rr)}</td>
           <td>${escapeHtml(record.spo2)}</td>
+          <td>${escapeHtml(record.sbp ?? "-")}</td>
+          <td>${escapeHtml(record.dbp ?? "-")}</td>
+          <td>${escapeHtml(record.map ?? "-")}</td>
+          <td>${escapeHtml(record.pp ?? "-")}</td>
           <td class="score-cell">${escapeHtml(record.total)}</td>
           <td><span class="risk-badge ${escapeHtml(record.riskKey)}">${escapeHtml(record.riskLabel)}</span></td>
         </tr>
@@ -1542,6 +1782,7 @@
         "patient_name",
         "hn",
         "gest_age",
+        "dol",
         "attending_doctor",
         "reporter_name",
         "reporter_role",
@@ -1551,6 +1792,11 @@
         "hr",
         "rr",
         "spo2",
+        "sbp",
+        "dbp",
+        "map",
+        "pp",
+        "bp_period",
         "breathing",
         "color_consciousness",
         "total_score",
@@ -1565,6 +1811,7 @@
         record.patientName,
         record.hn,
         record.gestAge,
+        record.dol || "",
         record.attendingDoctor || "",
         record.reporter?.name || "",
         record.reporter?.role || "",
@@ -1574,6 +1821,11 @@
         record.hr,
         record.rr,
         record.spo2,
+        record.sbp ?? "",
+        record.dbp ?? "",
+        record.map ?? "",
+        record.pp ?? "",
+        record.bpPeriod || "",
         record.breathing,
         record.neuroColor,
         record.total,
@@ -1616,11 +1868,18 @@
 
   global.NewbornNEWS = {
     NUMERIC_FIELDS,
+    BP_TARGETS,
+    BP_METRICS,
     SELECT_FIELDS,
     RISK_LEVELS,
     calculateNEWS,
     getRisk,
     isEscalationRisk,
+    hasBloodPressureAlert,
+    shouldShowLocalAlert,
+    getBloodPressureTarget,
+    calculateBloodPressure,
+    parseGestationalWeek,
     scoreNumeric,
     scoreSelect
   };

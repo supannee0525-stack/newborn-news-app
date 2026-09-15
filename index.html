@@ -94,7 +94,11 @@
             </label>
             <label>
               อายุครรภ์
-              <input id="gestAge" name="gestAge" type="text" autocomplete="off" placeholder="เช่น 38+2 wk">
+              <input id="gestAge" name="gestAge" type="text" inputmode="numeric" autocomplete="off" placeholder="เช่น 30 หรือ 30+2" required>
+            </label>
+            <label>
+              Date of Life (DOL)
+              <input id="dol" name="dol" type="number" inputmode="numeric" min="1" max="365" step="1" placeholder="เช่น 7" required>
             </label>
             <label>
               แพทย์เจ้าของไข้ / ผู้ดูแล
@@ -104,6 +108,34 @@
               วันที่/เวลา
               <input id="assessedAt" name="assessedAt" type="datetime-local">
             </label>
+          </fieldset>
+
+          <fieldset class="bp-fieldset">
+            <legend>Blood Pressure <small>mmHg</small></legend>
+            <p class="bp-target-summary waiting" id="bpTargetSummary">กรอกอายุครรภ์และ DOL เพื่อดูค่า Target</p>
+            <div class="vital-grid bp-grid">
+              <label class="vital-field">
+                <span>SBP <small>mmHg</small></span>
+                <input id="sbp" name="sbp" type="number" inputmode="numeric" min="0" max="250" step="1" placeholder="เช่น 51" required>
+                <output class="score-pill pending" id="sbpStatus">รอข้อมูล</output>
+              </label>
+              <label class="vital-field">
+                <span>DBP <small>mmHg</small></span>
+                <input id="dbp" name="dbp" type="number" inputmode="numeric" min="0" max="200" step="1" placeholder="เช่น 28" required>
+                <output class="score-pill pending" id="dbpStatus">รอข้อมูล</output>
+              </label>
+              <label class="vital-field">
+                <span>MAP <small>mmHg</small></span>
+                <input id="map" name="map" type="number" inputmode="numeric" min="0" max="200" step="1" placeholder="เช่น 36" required>
+                <output class="score-pill pending" id="mapStatus">รอข้อมูล</output>
+              </label>
+              <label class="vital-field">
+                <span>PP <small>mmHg</small></span>
+                <input id="pp" name="pp" type="number" inputmode="numeric" min="0" max="200" step="1" placeholder="เช่น 17" required>
+                <output class="score-pill pending" id="ppStatus">รอข้อมูล</output>
+              </label>
+            </div>
+            <p class="bp-status-summary waiting" id="bpStatusSummary">ยังไม่ได้ประเมินความดัน</p>
           </fieldset>
 
           <fieldset>
@@ -272,13 +304,17 @@
               <th>HR</th>
               <th>RR</th>
               <th>SpO2</th>
+              <th>SBP</th>
+              <th>DBP</th>
+              <th>MAP</th>
+              <th>PP</th>
               <th>Score</th>
               <th>ผลประเมิน</th>
             </tr>
           </thead>
           <tbody id="historyBody">
             <tr>
-              <td colspan="8" class="empty-row">ยังไม่มีประวัติที่บันทึก</td>
+              <td colspan="12" class="empty-row">ยังไม่มีประวัติที่บันทึก</td>
             </tr>
           </tbody>
         </table>

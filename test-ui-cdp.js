@@ -105,11 +105,24 @@ async function main() {
         el.dispatchEvent(new Event("change", { bubbles: true }));
       };
       const wait = (ms) => new Promise((resolve) => window.setTimeout(resolve, ms));
+      if (!document.getElementById("profileModal").hidden) {
+        set("reporterNameInput", "UI Test Nurse");
+        document.getElementById("profileForm").requestSubmit();
+        await wait(80);
+      }
       const fillAssessment = (input) => {
         Object.entries(input).forEach(([id, value]) => set(id, value));
       };
       const collectState = (input) => {
-        const calculated = window.NewbornNEWS.calculateNEWS(input);
+        const calculated = window.NewbornNEWS.calculateNEWS({
+          ...input,
+          gestAge: document.getElementById("gestAge").value,
+          dol: document.getElementById("dol").value,
+          sbp: document.getElementById("sbp").value,
+          dbp: document.getElementById("dbp").value,
+          map: document.getElementById("map").value,
+          pp: document.getElementById("pp").value
+        });
         const banner = document.getElementById("alertBanner");
         return {
           formulaTotal: calculated.total,
@@ -126,7 +139,9 @@ async function main() {
           modalScore: document.getElementById("modalScore").textContent.trim(),
           bannerVisible: !banner.hidden && banner.classList.contains("show"),
           bannerTitle: document.getElementById("bannerTitle").textContent.trim(),
-          bannerMessage: document.getElementById("bannerMessage").textContent.trim()
+          bannerMessage: document.getElementById("bannerMessage").textContent.trim(),
+          bpTarget: document.getElementById("bpTargetSummary").textContent.trim(),
+          bpStatus: document.getElementById("bpStatusSummary").textContent.trim()
         };
       };
       const submitAssessment = async (input) => {
@@ -137,7 +152,12 @@ async function main() {
       };
       set("patientName", "Baby Test");
       set("hn", "HN001");
-      set("gestAge", "38+2 wk");
+      set("gestAge", "30");
+      set("dol", "7");
+      set("sbp", "51");
+      set("dbp", "28");
+      set("map", "36");
+      set("pp", "17");
       set("assessedAt", "2026-08-28T12:00");
 
       const lowInput = {
@@ -149,6 +169,28 @@ async function main() {
         neuroColor: "pink-alert"
       };
       const low = await submitAssessment(lowInput);
+
+      const bpLowInput = {
+        bt: "36.8",
+        hr: "140",
+        rr: "48",
+        spo2: "98",
+        breathing: "normal",
+        neuroColor: "pink-alert",
+        sbp: "49",
+        dbp: "20",
+        map: "33",
+        pp: "12"
+      };
+      const bpLow = await submitAssessment(bpLowInput);
+      document.getElementById("alertBanner").click();
+      await wait(80);
+      const bpLowDetail = collectState(bpLowInput);
+      document.getElementById("ackAlertButton").click();
+      set("sbp", "51");
+      set("dbp", "28");
+      set("map", "36");
+      set("pp", "17");
 
       const mediumInput = {
         bt: "38.5",
@@ -179,12 +221,19 @@ async function main() {
       high.historyRows = document.querySelectorAll("#historyBody tr").length;
       high.storedRecords = JSON.parse(localStorage.getItem("newborn-news-records-v1") || "[]").length;
 
+      const screenshotState = await submitAssessment(bpLowInput);
+      document.querySelector(".bp-fieldset").scrollIntoView({ block: "center" });
+      await wait(100);
+
       return {
         hasApp: Boolean(window.NewbornNEWS),
         low,
+        bpLow,
+        bpLowDetail,
         medium,
         mediumDetail,
-        high
+        high,
+        screenshotState
       };
     })()`
   });
@@ -196,6 +245,15 @@ async function main() {
   }
   if (value.low.escalation || value.low.bannerVisible || value.low.modalVisible) {
     throw new Error("Low Risk should not open the urgent alert banner or modal");
+  }
+  if (value.bpLow.total !== "0" || !value.bpLow.bannerVisible || !value.bpLow.bannerTitle.includes("ความดันต่ำกว่า Target")) {
+    throw new Error("Low blood pressure example did not show the local alert banner");
+  }
+  if (!value.bpLow.bpTarget.includes("GA 30") || !value.bpLow.bpTarget.includes("SBP ≥ 51") || !value.bpLow.bpStatus.includes("4 ค่าต่ำกว่า Target")) {
+    throw new Error("GA 30 D4-14 blood pressure targets were not rendered correctly");
+  }
+  if (!value.bpLowDetail.modalVisible || !value.bpLowDetail.modalDescription.includes("ความดัน 4 รายการ")) {
+    throw new Error("Tapping the blood pressure alert did not open its details");
   }
   if (value.medium.total !== "5" || !value.medium.risk.includes("Medium Risk")) {
     throw new Error(`Expected Medium Risk total 5, got ${value.medium.total} / ${value.medium.risk}`);
