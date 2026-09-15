@@ -142,7 +142,8 @@ async function main() {
           bannerMessage: document.getElementById("bannerMessage").textContent.trim(),
           bpTarget: document.getElementById("bpTargetSummary").textContent.trim(),
           bpStatus: document.getElementById("bpStatusSummary").textContent.trim(),
-          calculatedMap: document.getElementById("map").value
+          calculatedMap: document.getElementById("map").value,
+          calculatedPP: document.getElementById("pp").value
         };
       };
       const submitAssessment = async (input) => {
@@ -157,7 +158,6 @@ async function main() {
       set("dol", "7");
       set("sbp", "52");
       set("dbp", "28");
-      set("pp", "17");
       set("assessedAt", "2026-08-28T12:00");
 
       const lowInput = {
@@ -178,8 +178,7 @@ async function main() {
         breathing: "normal",
         neuroColor: "pink-alert",
         sbp: "49",
-        dbp: "20",
-        pp: "12"
+        dbp: "20"
       };
       const bpLow = await submitAssessment(bpLowInput);
       document.getElementById("alertBanner").click();
@@ -188,7 +187,6 @@ async function main() {
       document.getElementById("ackAlertButton").click();
       set("sbp", "52");
       set("dbp", "28");
-      set("pp", "17");
 
       const mediumInput = {
         bt: "38.5",
@@ -247,13 +245,16 @@ async function main() {
   if (value.bpLow.total !== "0" || !value.bpLow.bannerVisible || !value.bpLow.bannerTitle.includes("ความดันต่ำกว่า Target")) {
     throw new Error("Low blood pressure example did not show the local alert banner");
   }
-  if (!value.bpLow.bpTarget.includes("GA 30") || !value.bpLow.bpTarget.includes("SBP ≥ 51") || !value.bpLow.bpStatus.includes("4 ค่าต่ำกว่า Target")) {
+  if (!value.bpLow.bpTarget.includes("GA 30") || !value.bpLow.bpTarget.includes("SBP ≥ 51") || !value.bpLow.bpStatus.includes("3 ค่าต่ำกว่า Target")) {
     throw new Error("GA 30 D4-14 blood pressure targets were not rendered correctly");
   }
   if (value.bpLow.calculatedMap !== "29.7" || !value.bpLow.alerts.some((text) => text.includes("MAP 29.7 mmHg"))) {
     throw new Error("MAP was not calculated from SBP and DBP using the requested formula");
   }
-  if (!value.bpLowDetail.modalVisible || !value.bpLowDetail.modalDescription.includes("ความดัน 4 รายการ")) {
+  if (value.bpLow.calculatedPP !== "29" || value.bpLow.alerts.some((text) => text.includes("PP"))) {
+    throw new Error("PP was not calculated from SBP and DBP using the requested formula");
+  }
+  if (!value.bpLowDetail.modalVisible || !value.bpLowDetail.modalDescription.includes("ความดัน 3 รายการ")) {
     throw new Error("Tapping the blood pressure alert did not open its details");
   }
   if (value.medium.total !== "5" || !value.medium.risk.includes("Medium Risk")) {

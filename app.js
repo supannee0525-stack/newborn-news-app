@@ -312,20 +312,31 @@
     return Math.round((dbp + ((sbp - dbp) / 3)) * 10) / 10;
   }
 
+  function calculatePP(sbpRaw, dbpRaw) {
+    if (sbpRaw === "" || sbpRaw === null || sbpRaw === undefined || dbpRaw === "" || dbpRaw === null || dbpRaw === undefined) {
+      return null;
+    }
+    const sbp = Number(sbpRaw);
+    const dbp = Number(dbpRaw);
+    if (!Number.isFinite(sbp) || !Number.isFinite(dbp)) return null;
+    return sbp - dbp;
+  }
+
   function calculateBloodPressure(input) {
     const calculatedMap = calculateMAP(input.sbp, input.dbp);
+    const calculatedPP = calculatePP(input.sbp, input.dbp);
     const targetResult = getBloodPressureTarget(input.gestAge, input.dol);
     if (targetResult.status !== "ok") {
-      return { complete: false, ...targetResult, calculatedMap, details: [], alerts: [], problems: [{ status: "invalid", message: targetResult.message }] };
+      return { complete: false, ...targetResult, calculatedMap, calculatedPP, details: [], alerts: [], problems: [{ status: "invalid", message: targetResult.message }] };
     }
 
     const details = Object.entries(BP_METRICS).map(([key, metric]) => {
-      const rawValue = key === "map" ? calculatedMap : input[key];
+      const rawValue = key === "map" ? calculatedMap : key === "pp" ? calculatedPP : input[key];
       const value = Number(rawValue);
       const target = targetResult.target[key];
 
       if (rawValue === "" || rawValue === null || rawValue === undefined) {
-        const message = key === "map" ? "MAP: กรุณากรอก SBP และ DBP เพื่อคำนวณอัตโนมัติ" : `${metric.label}: กรุณากรอกค่า`;
+        const message = key === "map" || key === "pp" ? `${metric.label}: กรุณากรอก SBP และ DBP เพื่อคำนวณอัตโนมัติ` : `${metric.label}: กรุณากรอกค่า`;
         return { key, label: metric.label, status: "missing", value: "", target, message };
       }
       if (!Number.isFinite(value) || value < 0 || value > metric.max) {
@@ -354,6 +365,7 @@
       complete,
       ...targetResult,
       calculatedMap,
+      calculatedPP,
       details,
       alerts: complete ? details.filter((item) => item.status === "low") : [],
       problems
@@ -1519,6 +1531,7 @@
 
     function renderBloodPressure(result) {
       fields.map.value = result?.calculatedMap ?? "";
+      fields.pp.value = result?.calculatedPP ?? "";
       Object.keys(BP_METRICS).forEach((key) => {
         updateBPStatusPill(key, result?.details?.find((item) => item.key === key) || null);
       });
@@ -1883,6 +1896,7 @@
     getBloodPressureTarget,
     calculateBloodPressure,
     calculateMAP,
+    calculatePP,
     parseGestationalWeek,
     scoreNumeric,
     scoreSelect

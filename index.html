@@ -110,10 +110,9 @@
             </label>
           </fieldset>
 
-          <fieldset class="bp-fieldset">
-            <legend>Blood Pressure <small>mmHg</small></legend>
-            <p class="bp-target-summary waiting" id="bpTargetSummary">กรอกอายุครรภ์และ DOL เพื่อดูค่า Target</p>
-            <div class="vital-grid bp-grid">
+          <fieldset>
+            <legend>ค่าสัญญาณชีพ</legend>
+            <div class="vital-grid">
               <label class="vital-field">
                 <span>SBP <small>mmHg</small></span>
                 <input id="sbp" name="sbp" type="number" inputmode="numeric" min="0" max="250" step="1" placeholder="เช่น 51" required>
@@ -124,23 +123,6 @@
                 <input id="dbp" name="dbp" type="number" inputmode="numeric" min="0" max="200" step="1" placeholder="เช่น 28" required>
                 <output class="score-pill pending" id="dbpStatus">รอข้อมูล</output>
               </label>
-              <label class="vital-field">
-                <span>MAP <small>mmHg</small></span>
-                <input id="map" name="map" type="number" step="0.1" placeholder="คำนวณอัตโนมัติ" readonly aria-readonly="true">
-                <output class="score-pill pending" id="mapStatus">รอข้อมูล</output>
-              </label>
-              <label class="vital-field">
-                <span>PP <small>mmHg</small></span>
-                <input id="pp" name="pp" type="number" inputmode="numeric" min="0" max="200" step="1" placeholder="เช่น 17" required>
-                <output class="score-pill pending" id="ppStatus">รอข้อมูล</output>
-              </label>
-            </div>
-            <p class="bp-status-summary waiting" id="bpStatusSummary">ยังไม่ได้ประเมินความดัน</p>
-          </fieldset>
-
-          <fieldset>
-            <legend>ค่าสัญญาณชีพ</legend>
-            <div class="vital-grid">
               <label class="vital-field">
                 <span>BT <small>°C</small></span>
                 <input id="bt" name="bt" type="number" inputmode="decimal" min="25" max="45" step="0.1" placeholder="36.8" required>
@@ -162,6 +144,24 @@
                 <output class="score-pill pending" id="spo2Score">รอข้อมูล</output>
               </label>
             </div>
+          </fieldset>
+
+          <fieldset class="bp-fieldset">
+            <legend>Blood Pressure <small>คำนวณอัตโนมัติจาก SBP/DBP</small></legend>
+            <p class="bp-target-summary waiting" id="bpTargetSummary">กรอกอายุครรภ์และ DOL เพื่อดูค่า Target</p>
+            <div class="vital-grid bp-grid">
+              <label class="vital-field">
+                <span>MAP <small>mmHg</small></span>
+                <input id="map" name="map" type="number" step="0.1" placeholder="คำนวณอัตโนมัติ" readonly aria-readonly="true">
+                <output class="score-pill pending" id="mapStatus">รอข้อมูล</output>
+              </label>
+              <label class="vital-field">
+                <span>PP <small>mmHg</small></span>
+                <input id="pp" name="pp" type="number" step="1" placeholder="คำนวณอัตโนมัติ" readonly aria-readonly="true">
+                <output class="score-pill pending" id="ppStatus">รอข้อมูล</output>
+              </label>
+            </div>
+            <p class="bp-status-summary waiting" id="bpStatusSummary">ยังไม่ได้ประเมินความดัน</p>
           </fieldset>
 
           <fieldset>
@@ -452,6 +452,6 @@
     </section>
   </div>
 
-  <script src="app.js?v=20260829-v5"></script>
+  <script src="app.js?v=20260829-v6"></script>
 </body>
 </html>
