@@ -1328,14 +1328,10 @@
         ui.mobileScore.textContent = "--";
         ui.mobileRisk.textContent = missingCount ? `ยังขาด ${missingCount} ช่อง` : "ตรวจข้อมูล";
         ui.totalScore.textContent = "--";
-        ui.riskSummary.textContent = result.problems.map((item) => item.message).join(" / ");
+        ui.riskSummary.hidden = true;
         ui.riskBadge.textContent = missingCount ? "ข้อมูลยังไม่ครบ" : "ข้อมูลไม่ถูกต้อง";
         ui.riskBadge.className = "risk-badge waiting";
-        ui.recommendation.innerHTML = `
-          <h3>แนวทางตอบสนอง</h3>
-          <p>กรอกข้อมูลให้ครบก่อน ระบบจึงจะรวมคะแนนและแปลผลได้</p>
-          <span>ความถี่ประเมินซ้ำ: --</span>
-        `;
+        ui.recommendation.hidden = true;
         ui.alertList.innerHTML = `<li class="muted">ยังไม่มีผลแจ้งเตือนจนกว่าจะกรอกข้อมูลครบ</li>`;
         renderBreakdown(result.details);
         return;
@@ -1350,11 +1346,13 @@
       ui.mobileScore.textContent = result.total;
       ui.mobileRisk.textContent = displayRisk;
       ui.totalScore.textContent = result.total;
+      ui.riskSummary.hidden = false;
       ui.riskSummary.textContent = bpAlertCount
         ? `NEWS ${result.total} คะแนน: ${risk.label} • BP ต่ำกว่า Target ${bpAlertCount} ค่า`
         : `คะแนนรวม ${result.total} คะแนน: ${risk.label}`;
       ui.riskBadge.textContent = displayRisk;
       ui.riskBadge.className = `risk-badge ${bpOnlyAlert ? "bp-alert" : risk.key}`;
+      ui.recommendation.hidden = false;
       ui.recommendation.innerHTML = `
         <h3>แนวทางตอบสนอง</h3>
         <p>${bpOnlyAlert ? "ทวนการวัดความดันและแจ้งพยาบาล/แพทย์ผู้รับผิดชอบตามแนวทางหน่วยงาน" : risk.action}</p>
@@ -1370,14 +1368,10 @@
       ui.mobileScore.textContent = "--";
       ui.mobileRisk.textContent = "รอข้อมูล";
       ui.totalScore.textContent = "--";
-      ui.riskSummary.textContent = "กรอกข้อมูลให้ครบเพื่อประเมินระดับความเสี่ยง";
+      ui.riskSummary.hidden = true;
       ui.riskBadge.textContent = "รอข้อมูล";
       ui.riskBadge.className = "risk-badge waiting";
-      ui.recommendation.innerHTML = `
-        <h3>แนวทางตอบสนอง</h3>
-        <p>ระบบจะแสดงคำแนะนำหลังคำนวณคะแนน</p>
-        <span>ความถี่ประเมินซ้ำ: --</span>
-      `;
+      ui.recommendation.hidden = true;
       ui.alertList.innerHTML = `<li class="muted">ยังไม่มีข้อมูลผิดปกติ</li>`;
       ui.breakdownList.innerHTML = `<p class="muted">ยังไม่ได้คำนวณ</p>`;
       if (ui.bpTargetSummary) {
