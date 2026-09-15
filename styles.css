@@ -322,6 +322,22 @@ h1 {
   color: var(--ink);
 }
 
+.notif-settings summary {
+  list-style: none;
+  cursor: pointer;
+}
+
+.notif-settings summary::-webkit-details-marker {
+  display: none;
+}
+
+.notif-settings-body {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
 /* Main Workspace Grid */
 .workspace {
   display: grid;

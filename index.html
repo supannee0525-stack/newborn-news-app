@@ -63,8 +63,13 @@
       <div class="notification-action-group">
         <button type="button" class="notif-btn" id="toggleNotifPermissionBtn">🔔 เปิดแจ้งเตือนหน้าจอ</button>
         <button type="button" class="notif-btn active" id="toggleSoundBtn" aria-pressed="true">🔊 เปิดเสียงเตือน</button>
-        <button type="button" class="notif-btn ghost" id="testAlertBtn">⚡ ทดสอบทันที</button>
-        <button type="button" class="notif-btn ghost" id="testDelayAlertBtn">⏳ ทดสอบหลังพับจอ (3 วิ)</button>
+        <details class="notif-settings">
+          <summary class="notif-btn ghost">⚙️ ตั้งค่า</summary>
+          <div class="notif-settings-body">
+            <button type="button" class="notif-btn ghost" id="testAlertBtn">⚡ ทดสอบทันที</button>
+            <button type="button" class="notif-btn ghost" id="testDelayAlertBtn">⏳ ทดสอบหลังพับจอ (3 วิ)</button>
+          </div>
+        </details>
       </div>
     </section>
 

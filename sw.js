@@ -1,5 +1,5 @@
 // Service Worker for Newborn NEWS (PWA & Mobile Notifications)
-const CACHE_NAME = "newborn-news-v7";
+const CACHE_NAME = "newborn-news-v8";
 const ASSETS_TO_CACHE = [
   "./",
   "./index.html",
