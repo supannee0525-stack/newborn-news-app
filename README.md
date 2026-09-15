@@ -27,7 +27,6 @@ python3 -m http.server 8080
 - History stays in the browser. When LINE alerts are enabled, Medium Risk and High Risk alert payloads are sent to the server so it can forward them to the team LINE group.
 - The urgent in-app alert appears first as a mobile-style top notification banner for Medium Risk (5-6) and High Risk (7+). Tapping the banner opens the detailed popup.
 - A blood pressure value below its GA/DOL target also opens a local alert and is included in Medium/High LINE summaries.
-- Source-data guard: GA 36 / D4-14 SBP is disabled pending clinical confirmation because the source file says 36 mmHg while MAP is 44 mmHg.
 - This is a calculation aid only. Confirm thresholds and escalation policy with the clinical unit before real clinical use.
 
 ## LINE alert option

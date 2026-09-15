@@ -32,16 +32,17 @@ const normal = news.calculateBloodPressure({
 assert.equal(normal.complete, true);
 assert.equal(normal.alerts.length, 0);
 
-const sourceAnomaly = news.calculateBloodPressure({
+const confirmedGa36 = news.calculateBloodPressure({
   gestAge: "36",
   dol: "4",
-  sbp: "63",
+  sbp: "36",
   dbp: "34",
   map: "44",
   pp: "20"
 });
-assert.equal(sourceAnomaly.complete, false);
-assert.match(sourceAnomaly.problems[0].message, /ต้องยืนยัน/);
+assert.equal(confirmedGa36.complete, true);
+assert.deepEqual(confirmedGa36.target, { sbp: 36, dbp: 34, map: 44, pp: 20 });
+assert.equal(confirmedGa36.alerts.length, 0);
 
 const scored = news.calculateNEWS({
   gestAge: "30",

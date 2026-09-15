@@ -126,7 +126,7 @@
     33: { d1_3: [46, 30, 35, 12], d4_14: [57, 31, 40, 19], gt14: [61, 33, 43, 20] },
     34: { d1_3: [48, 31, 37, 12], d4_14: [59, 32, 41, 20], gt14: [63, 34, 44, 20] },
     35: { d1_3: [49, 32, 38, 12], d4_14: [61, 33, 43, 20], gt14: [65, 35, 45, 20] },
-    36: { d1_3: [51, 33, 39, 12], d4_14: [null, 34, 44, 20], gt14: [67, 36, 47, 20] },
+    36: { d1_3: [51, 33, 39, 12], d4_14: [36, 34, 44, 20], gt14: [67, 36, 47, 20] },
     37: { d1_3: [52, 34, 40, 12], d4_14: [65, 35, 45, 20], gt14: [69, 37, 48, 20] },
     38: { d1_3: [54, 35, 41, 14], d4_14: [67, 36, 47, 20], gt14: [71, 38, 48, 23] },
     39: { d1_3: [55, 36, 42, 14], d4_14: [69, 37, 48, 20], gt14: [72, 39, 50, 23] },
@@ -319,17 +319,6 @@
       if (!Number.isFinite(value) || value < 0 || value > metric.max) {
         return { key, label: metric.label, status: "invalid", value: rawValue, target, message: `${metric.label}: ตรวจค่าที่กรอก (0-${metric.max} mmHg)` };
       }
-      if (target === null) {
-        return {
-          key,
-          label: metric.label,
-          status: "invalid",
-          value,
-          target,
-          message: "SBP: เกณฑ์ GA 36, D4-14 ในเอกสารต้นฉบับต้องยืนยันก่อนใช้งาน"
-        };
-      }
-
       const isLow = value < target;
       return {
         key,
@@ -1530,7 +1519,7 @@
 
       const targetParts = Object.keys(BP_METRICS).map((key) => {
         const value = result.target[key];
-        return `${BP_METRICS[key].label} ≥ ${value === null ? "รอยืนยัน" : value}`;
+        return `${BP_METRICS[key].label} ≥ ${value}`;
       });
       ui.bpTargetSummary.textContent = `Target GA ${result.gestAge} • ${result.periodLabel}: ${targetParts.join(" | ")} mmHg`;
       ui.bpTargetSummary.className = `bp-target-summary ${result.complete ? "normal" : "warning"}`;
