@@ -53,24 +53,26 @@
     </section>
 
     <section class="notification-toolbar" aria-label="การตั้งค่าแจ้งเตือนหน้าจอ">
-      <div class="notification-status-group">
-        <span class="notification-icon" aria-hidden="true">🔔</span>
-        <div>
-          <strong id="notificationStatusText">ระบบแจ้งเตือนหน้าจอ (Screen Notification & Sound)</strong>
-          <p id="notificationStatusSub" class="notification-sub">คลิกเพื่อเปิดรับการแจ้งเตือนบนหน้าจอ (OS / Browser) และเสียงเตือนเมื่อพบความเสี่ยง</p>
-        </div>
-      </div>
-      <div class="notification-action-group">
-        <button type="button" class="notif-btn" id="toggleNotifPermissionBtn">🔔 เปิดแจ้งเตือนหน้าจอ</button>
-        <button type="button" class="notif-btn active" id="toggleSoundBtn" aria-pressed="true">🔊 เปิดเสียงเตือน</button>
-        <details class="notif-settings">
-          <summary class="notif-btn ghost">⚙️ ตั้งค่า</summary>
-          <div class="notif-settings-body">
+      <details class="notif-panel">
+        <summary class="notif-panel-summary">
+          <span class="notification-icon" aria-hidden="true">🔔</span>
+          <span>ตั้งค่าการแจ้งเตือนหน้าจอ</span>
+        </summary>
+        <div class="notif-panel-body">
+          <div class="notification-status-group">
+            <div>
+              <strong id="notificationStatusText">ระบบแจ้งเตือนหน้าจอ (Screen Notification & Sound)</strong>
+              <p id="notificationStatusSub" class="notification-sub">คลิกเพื่อเปิดรับการแจ้งเตือนบนหน้าจอ (OS / Browser) และเสียงเตือนเมื่อพบความเสี่ยง</p>
+            </div>
+          </div>
+          <div class="notification-action-group">
+            <button type="button" class="notif-btn" id="toggleNotifPermissionBtn">🔔 เปิดแจ้งเตือนหน้าจอ</button>
+            <button type="button" class="notif-btn active" id="toggleSoundBtn" aria-pressed="true">🔊 เปิดเสียงเตือน</button>
             <button type="button" class="notif-btn ghost" id="testAlertBtn">⚡ ทดสอบทันที</button>
             <button type="button" class="notif-btn ghost" id="testDelayAlertBtn">⏳ ทดสอบหลังพับจอ (3 วิ)</button>
           </div>
-        </details>
-      </div>
+        </div>
+      </details>
     </section>
 
     <div class="workspace">

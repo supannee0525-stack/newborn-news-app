@@ -225,18 +225,40 @@ h1 {
 
 /* Notification Control Toolbar */
 .notification-toolbar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
   margin-bottom: 20px;
-  padding: 12px 18px;
   background: #ffffff;
   border: 1px solid #dbeafe;
   border-left: 4px solid #3b82f6;
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-sm);
+}
+
+.notif-panel {
+  padding: 12px 18px;
+}
+
+.notif-panel-summary {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  list-style: none;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #1e3a8a;
+}
+
+.notif-panel-summary::-webkit-details-marker {
+  display: none;
+}
+
+.notif-panel-body {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 14px;
 }
 
 .notification-status-group {
@@ -320,22 +342,6 @@ h1 {
 .notif-btn.ghost:hover {
   background: #e2e8f0;
   color: var(--ink);
-}
-
-.notif-settings summary {
-  list-style: none;
-  cursor: pointer;
-}
-
-.notif-settings summary::-webkit-details-marker {
-  display: none;
-}
-
-.notif-settings-body {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 8px;
 }
 
 /* Main Workspace Grid */
@@ -1416,8 +1422,11 @@ input::placeholder {
   }
 
   .notification-toolbar {
-    padding: 12px 14px;
     margin-bottom: 14px;
+  }
+
+  .notif-panel {
+    padding: 12px 14px;
   }
 
   .notification-action-group {
