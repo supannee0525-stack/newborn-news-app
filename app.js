@@ -302,19 +302,31 @@
     return { status: "ok", gestAge, dol, periodKey, periodLabel: BP_PERIODS[periodKey], target };
   }
 
+  function calculateMAP(sbpRaw, dbpRaw) {
+    if (sbpRaw === "" || sbpRaw === null || sbpRaw === undefined || dbpRaw === "" || dbpRaw === null || dbpRaw === undefined) {
+      return null;
+    }
+    const sbp = Number(sbpRaw);
+    const dbp = Number(dbpRaw);
+    if (!Number.isFinite(sbp) || !Number.isFinite(dbp)) return null;
+    return Math.round((dbp + ((sbp - dbp) / 3)) * 10) / 10;
+  }
+
   function calculateBloodPressure(input) {
+    const calculatedMap = calculateMAP(input.sbp, input.dbp);
     const targetResult = getBloodPressureTarget(input.gestAge, input.dol);
     if (targetResult.status !== "ok") {
-      return { complete: false, ...targetResult, details: [], alerts: [], problems: [{ status: "invalid", message: targetResult.message }] };
+      return { complete: false, ...targetResult, calculatedMap, details: [], alerts: [], problems: [{ status: "invalid", message: targetResult.message }] };
     }
 
     const details = Object.entries(BP_METRICS).map(([key, metric]) => {
-      const rawValue = input[key];
+      const rawValue = key === "map" ? calculatedMap : input[key];
       const value = Number(rawValue);
       const target = targetResult.target[key];
 
       if (rawValue === "" || rawValue === null || rawValue === undefined) {
-        return { key, label: metric.label, status: "missing", value: "", target, message: `${metric.label}: กรุณากรอกค่า` };
+        const message = key === "map" ? "MAP: กรุณากรอก SBP และ DBP เพื่อคำนวณอัตโนมัติ" : `${metric.label}: กรุณากรอกค่า`;
+        return { key, label: metric.label, status: "missing", value: "", target, message };
       }
       if (!Number.isFinite(value) || value < 0 || value > metric.max) {
         return { key, label: metric.label, status: "invalid", value: rawValue, target, message: `${metric.label}: ตรวจค่าที่กรอก (0-${metric.max} mmHg)` };
@@ -341,6 +353,7 @@
     return {
       complete,
       ...targetResult,
+      calculatedMap,
       details,
       alerts: complete ? details.filter((item) => item.status === "low") : [],
       problems
@@ -1505,6 +1518,7 @@
     }
 
     function renderBloodPressure(result) {
+      fields.map.value = result?.calculatedMap ?? "";
       Object.keys(BP_METRICS).forEach((key) => {
         updateBPStatusPill(key, result?.details?.find((item) => item.key === key) || null);
       });
@@ -1687,7 +1701,7 @@
         spo2: Number(input.spo2),
         sbp: Number(input.sbp),
         dbp: Number(input.dbp),
-        map: Number(input.map),
+        map: result.bloodPressure.calculatedMap,
         pp: Number(input.pp),
         bpPeriod: result.bloodPressure.periodLabel,
         breathing: result.details.find((item) => item.key === "breathing")?.displayValue || "",
@@ -1868,6 +1882,7 @@
     shouldShowLocalAlert,
     getBloodPressureTarget,
     calculateBloodPressure,
+    calculateMAP,
     parseGestationalWeek,
     scoreNumeric,
     scoreSelect

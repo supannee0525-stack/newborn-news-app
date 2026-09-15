@@ -141,7 +141,8 @@ async function main() {
           bannerTitle: document.getElementById("bannerTitle").textContent.trim(),
           bannerMessage: document.getElementById("bannerMessage").textContent.trim(),
           bpTarget: document.getElementById("bpTargetSummary").textContent.trim(),
-          bpStatus: document.getElementById("bpStatusSummary").textContent.trim()
+          bpStatus: document.getElementById("bpStatusSummary").textContent.trim(),
+          calculatedMap: document.getElementById("map").value
         };
       };
       const submitAssessment = async (input) => {
@@ -154,9 +155,8 @@ async function main() {
       set("hn", "HN001");
       set("gestAge", "30");
       set("dol", "7");
-      set("sbp", "51");
+      set("sbp", "52");
       set("dbp", "28");
-      set("map", "36");
       set("pp", "17");
       set("assessedAt", "2026-08-28T12:00");
 
@@ -179,7 +179,6 @@ async function main() {
         neuroColor: "pink-alert",
         sbp: "49",
         dbp: "20",
-        map: "33",
         pp: "12"
       };
       const bpLow = await submitAssessment(bpLowInput);
@@ -187,9 +186,8 @@ async function main() {
       await wait(80);
       const bpLowDetail = collectState(bpLowInput);
       document.getElementById("ackAlertButton").click();
-      set("sbp", "51");
+      set("sbp", "52");
       set("dbp", "28");
-      set("map", "36");
       set("pp", "17");
 
       const mediumInput = {
@@ -251,6 +249,9 @@ async function main() {
   }
   if (!value.bpLow.bpTarget.includes("GA 30") || !value.bpLow.bpTarget.includes("SBP ≥ 51") || !value.bpLow.bpStatus.includes("4 ค่าต่ำกว่า Target")) {
     throw new Error("GA 30 D4-14 blood pressure targets were not rendered correctly");
+  }
+  if (value.bpLow.calculatedMap !== "29.7" || !value.bpLow.alerts.some((text) => text.includes("MAP 29.7 mmHg"))) {
+    throw new Error("MAP was not calculated from SBP and DBP using the requested formula");
   }
   if (!value.bpLowDetail.modalVisible || !value.bpLowDetail.modalDescription.includes("ความดัน 4 รายการ")) {
     throw new Error("Tapping the blood pressure alert did not open its details");

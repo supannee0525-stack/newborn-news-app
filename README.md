@@ -12,6 +12,7 @@ Static web app for calculating a newborn early warning score from:
 
 The score ranges and escalation bands are transcribed from the user-provided NEWS chart image.
 Blood pressure targets are transcribed from the user-provided `ตาราง_BP_targets.xlsx` for GA 24-42 and DOL bands D1-3, D4-14, and >D14. Blood pressure status is shown separately and is not added to NEWS Score because the source table does not define a 0-3 score.
+MAP is calculated automatically to one decimal place from `DBP + ((SBP - DBP) / 3)` and is not entered manually.
 
 ## Run locally
 

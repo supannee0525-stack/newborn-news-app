@@ -8,14 +8,15 @@ const example = news.calculateBloodPressure({
   dol: "7",
   sbp: "49",
   dbp: "20",
-  map: "33",
   pp: "12"
 });
 
 assert.equal(example.complete, true);
 assert.deepEqual(example.target, { sbp: 51, dbp: 28, map: 36, pp: 17 });
 assert.equal(example.periodLabel, "D4-14");
+assert.equal(example.calculatedMap, 29.7);
 assert.equal(example.alerts.length, 4);
+assert.equal(news.calculateMAP("49", "20"), 29.7);
 
 assert.equal(news.getBloodPressureTarget("24+6", "1").periodLabel, "D1-3");
 assert.equal(news.getBloodPressureTarget("42 wk", "15").periodLabel, "> D14");
@@ -24,9 +25,8 @@ assert.equal(news.getBloodPressureTarget("23", "1").status, "invalid");
 const normal = news.calculateBloodPressure({
   gestAge: "30+2",
   dol: "14",
-  sbp: "51",
+  sbp: "52",
   dbp: "28",
-  map: "36",
   pp: "17"
 });
 assert.equal(normal.complete, true);
@@ -37,12 +37,13 @@ const confirmedGa36 = news.calculateBloodPressure({
   dol: "4",
   sbp: "36",
   dbp: "34",
-  map: "44",
   pp: "20"
 });
 assert.equal(confirmedGa36.complete, true);
 assert.deepEqual(confirmedGa36.target, { sbp: 36, dbp: 34, map: 44, pp: 20 });
-assert.equal(confirmedGa36.alerts.length, 0);
+assert.equal(confirmedGa36.calculatedMap, 34.7);
+assert.equal(confirmedGa36.alerts.length, 1);
+assert.equal(confirmedGa36.alerts[0].key, "map");
 
 const scored = news.calculateNEWS({
   gestAge: "30",
@@ -55,7 +56,6 @@ const scored = news.calculateNEWS({
   neuroColor: "pink-alert",
   sbp: "49",
   dbp: "20",
-  map: "33",
   pp: "12"
 });
 assert.equal(scored.total, 0);
