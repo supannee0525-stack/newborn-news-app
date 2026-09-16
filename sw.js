@@ -1,5 +1,5 @@
 // Service Worker for Newborn NEWS (PWA & Mobile Notifications)
-const CACHE_NAME = "newborn-news-v12";
+const CACHE_NAME = "newborn-news-v13";
 const ASSETS_TO_CACHE = [
   "./",
   "./index.html",
@@ -36,26 +36,23 @@ self.addEventListener("activate", (event) => {
   );
 });
 
-// Cache with network fallback
+// Network first, cache only as an offline fallback: a clinical tool must never
+// show yesterday's scoring rules just because a copy is on the device.
 self.addEventListener("fetch", (event) => {
   const url = new URL(event.request.url);
-  // Don't intercept API requests
-  if (url.pathname.includes("/api/")) {
-    return;
-  }
+  if (event.request.method !== "GET") return;
+  if (url.pathname.includes("/api/")) return;
+
   event.respondWith(
-    caches.match(event.request).then((cachedResponse) => {
-      if (cachedResponse) {
-        // Fetch in background to update cache
-        fetch(event.request).then((networkResponse) => {
-          if (networkResponse && networkResponse.status === 200) {
-            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, networkResponse));
-          }
-        }).catch(() => {});
-        return cachedResponse;
-      }
-      return fetch(event.request);
-    })
+    fetch(event.request)
+      .then((networkResponse) => {
+        if (networkResponse && networkResponse.status === 200 && networkResponse.type === "basic") {
+          const copy = networkResponse.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy)).catch(() => {});
+        }
+        return networkResponse;
+      })
+      .catch(() => caches.match(event.request))
   );
 });
 
