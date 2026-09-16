@@ -248,7 +248,7 @@ async function main() {
   if (!value.bpLow.bpTarget.includes("GA 30") || !value.bpLow.bpTarget.includes("SBP ≥ 51") || !value.bpLow.bpStatus.includes("3 ค่าต่ำกว่า Target")) {
     throw new Error("GA 30 D4-14 blood pressure targets were not rendered correctly");
   }
-  if (value.bpLow.calculatedMap !== "29.7" || !value.bpLow.alerts.some((text) => text.includes("MAP 29.7 mmHg"))) {
+  if (value.bpLow.calculatedMap !== "30" || !value.bpLow.alerts.some((text) => text.includes("MAP 30 mmHg"))) {
     throw new Error("MAP was not calculated from SBP and DBP using the requested formula");
   }
   if (value.bpLow.calculatedPP !== "29" || value.bpLow.alerts.some((text) => text.includes("PP"))) {
