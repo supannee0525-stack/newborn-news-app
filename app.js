@@ -309,7 +309,7 @@
     const sbp = Number(sbpRaw);
     const dbp = Number(dbpRaw);
     if (!Number.isFinite(sbp) || !Number.isFinite(dbp)) return null;
-    return Math.round(dbp + ((sbp - dbp) / 3));
+    return Math.floor(dbp + ((sbp - dbp) / 3));
   }
 
   function calculatePP(sbpRaw, dbpRaw) {

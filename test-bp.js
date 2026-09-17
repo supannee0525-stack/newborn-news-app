@@ -13,11 +13,11 @@ const example = news.calculateBloodPressure({
 assert.equal(example.complete, true);
 assert.deepEqual(example.target, { sbp: 51, dbp: 28, map: 36, pp: 17 });
 assert.equal(example.periodLabel, "D4-14");
-assert.equal(example.calculatedMap, 30);
+assert.equal(example.calculatedMap, 29);
 assert.equal(example.calculatedPP, 29);
 assert.equal(example.alerts.length, 3);
 assert.deepEqual(example.alerts.map((item) => item.key), ["sbp", "dbp", "map"]);
-assert.equal(news.calculateMAP("49", "20"), 30);
+assert.equal(news.calculateMAP("49", "20"), 29);
 assert.equal(news.calculatePP("49", "20"), 29);
 
 assert.equal(news.getBloodPressureTarget("24+6", "1").periodLabel, "D1-3");
@@ -42,7 +42,7 @@ const confirmedGa36 = news.calculateBloodPressure({
 });
 assert.equal(confirmedGa36.complete, true);
 assert.deepEqual(confirmedGa36.target, { sbp: 36, dbp: 34, map: 44, pp: 20 });
-assert.equal(confirmedGa36.calculatedMap, 35);
+assert.equal(confirmedGa36.calculatedMap, 34);
 assert.equal(confirmedGa36.calculatedPP, 2);
 assert.equal(confirmedGa36.alerts.length, 2);
 assert.deepEqual(confirmedGa36.alerts.map((item) => item.key), ["map", "pp"]);
