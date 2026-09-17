@@ -699,6 +699,7 @@
     renderReporterUI();
     renderHistory();
     loadTeamAlertConfig();
+    setupSettingsMenu();
 
     if (!getActiveReporter()) {
       openProfileModal(true);
@@ -729,6 +730,26 @@
       localStorage.setItem(ACTIVE_REPORTER_STORAGE_KEY, id);
       renderReporterUI();
       renderSavedProfiles();
+    }
+
+    function setupSettingsMenu() {
+      const menu = document.getElementById("settingsMenu");
+      if (!menu) return;
+
+      document.addEventListener("click", (event) => {
+        if (menu.open && !menu.contains(event.target)) menu.open = false;
+      });
+
+      document.addEventListener("keydown", (event) => {
+        if (event.key === "Escape" && menu.open) menu.open = false;
+      });
+
+      const profileButton = document.getElementById("openProfileModalBtn");
+      if (profileButton) {
+        profileButton.addEventListener("click", () => {
+          menu.open = false;
+        });
+      }
     }
 
     function renderReporterUI() {

@@ -1924,3 +1924,122 @@ input::placeholder {
 .profile-modal.mandatory-mode #closeProfileBtn {
   display: none !important;
 }
+
+/* Header settings menu (gear) */
+.org-bar {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.org-bar-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.org-bar-badge {
+  padding: 3px 10px;
+  background: var(--teal-50);
+  border: 1px solid var(--teal-200);
+  border-radius: var(--radius-full);
+  color: var(--teal-700);
+  font-size: 0.74rem;
+  font-weight: 800;
+}
+
+.settings-menu {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.settings-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: #ffffff;
+  cursor: pointer;
+  list-style: none;
+  font-size: 1.15rem;
+  transition: var(--transition);
+}
+
+.settings-trigger::-webkit-details-marker {
+  display: none;
+}
+
+.settings-trigger:hover,
+.settings-menu[open] .settings-trigger {
+  background: var(--teal-50);
+  border-color: var(--teal-300);
+}
+
+.settings-panel {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 60;
+  width: min(330px, calc(100vw - 32px));
+  max-height: min(70vh, 560px);
+  overflow-y: auto;
+  padding: 6px 0;
+  background: #ffffff;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+}
+
+.settings-group {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--soft-line);
+}
+
+.settings-group:last-child {
+  border-bottom: none;
+}
+
+.settings-group-title {
+  margin: 0 0 8px;
+  color: var(--teal-700);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.settings-line {
+  display: block;
+  margin: 0;
+  color: var(--ink);
+  font-size: 0.92rem;
+  font-weight: 700;
+}
+
+.settings-sub {
+  margin: 2px 0 10px;
+  color: var(--muted);
+  font-size: 0.82rem;
+  line-height: 1.45;
+  word-break: break-word;
+}
+
+.settings-panel .notification-action-group {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+}
+
+.settings-panel .notif-btn {
+  justify-content: center;
+  padding: 9px 6px;
+  font-size: 0.8rem;
+  text-align: center;
+}

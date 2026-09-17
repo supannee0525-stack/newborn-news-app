@@ -14,10 +14,38 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Prompt:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=20260829-v4">
+  <link rel="stylesheet" href="styles.css?v=20260917-v2">
 </head>
 <body>
   <main class="app-shell">
+    <nav class="org-bar" aria-label="การตั้งค่า">
+      <div class="org-bar-info">
+        <span class="org-bar-badge">Newborn NEWS</span>
+      </div>
+      <details class="settings-menu" id="settingsMenu">
+        <summary class="settings-trigger" title="ตั้งค่า" aria-label="ตั้งค่า">⚙️</summary>
+        <div class="settings-panel">
+          <div class="settings-group">
+            <p class="settings-group-title">ผู้รายงาน / ผู้ประเมิน</p>
+            <strong class="settings-line" id="activeReporterName">ยังไม่ได้ลงทะเบียนผู้รายงาน</strong>
+            <p class="settings-sub" id="activeReporterMeta">แตะเพื่อระบุชื่อพยาบาล / แพทย์ผู้ประเมิน และหอผู้ป่วย</p>
+            <button type="button" class="notif-btn ghost" id="openProfileModalBtn">👤 สลับ / ลงทะเบียนผู้รายงาน</button>
+          </div>
+
+          <div class="settings-group">
+            <p class="settings-group-title">การแจ้งเตือนหน้าจอ</p>
+            <p class="settings-sub" id="notificationStatusSub">คลิกเพื่อเปิดรับการแจ้งเตือนบนหน้าจอ (OS / Browser) และเสียงเตือนเมื่อพบความเสี่ยง</p>
+            <div class="notification-action-group">
+              <button type="button" class="notif-btn" id="toggleNotifPermissionBtn">🔔 เปิดแจ้งเตือนหน้าจอ</button>
+              <button type="button" class="notif-btn active" id="toggleSoundBtn" aria-pressed="true">🔊 เปิดเสียงเตือน</button>
+              <button type="button" class="notif-btn ghost" id="testAlertBtn">⚡ ทดสอบทันที</button>
+              <button type="button" class="notif-btn ghost" id="testDelayAlertBtn">⏳ ทดสอบหลังพับจอ (3 วิ)</button>
+            </div>
+          </div>
+        </div>
+      </details>
+    </nav>
+
     <header class="topbar">
       <div>
         <h1><span class="title-full">Newborn Early Warning Sign Score (NEWS)</span><span class="title-short">Newborn NEWS</span></h1>
@@ -28,45 +56,6 @@
         <span id="headerRisk">รอข้อมูล</span>
       </div>
     </header>
-
-    <section class="reporter-bar" aria-label="ข้อมูลผู้รายงานและผู้ประเมิน">
-      <div class="reporter-info">
-        <span class="reporter-avatar" id="reporterAvatar" aria-hidden="true">👤</span>
-        <div class="reporter-details">
-          <div class="reporter-title-row">
-            <span class="reporter-badge">ผู้รายงาน / ผู้ประเมิน</span>
-            <strong id="activeReporterName">ยังไม่ได้ลงทะเบียนผู้รายงาน</strong>
-          </div>
-          <p id="activeReporterMeta" class="reporter-meta">แตะเพื่อระบุชื่อพยาบาล / แพทย์ผู้ประเมิน และหอผู้ป่วย</p>
-        </div>
-      </div>
-      <div class="reporter-actions">
-        <button type="button" class="reporter-btn" id="openProfileModalBtn">👤 สลับ / ลงทะเบียนผู้รายงาน</button>
-      </div>
-    </section>
-
-    <section class="notification-toolbar" aria-label="การตั้งค่าแจ้งเตือนหน้าจอ">
-      <details class="notif-panel">
-        <summary class="notif-panel-summary">
-          <span class="notification-icon" aria-hidden="true">🔔</span>
-          <span>ตั้งค่าการแจ้งเตือนหน้าจอ</span>
-        </summary>
-        <div class="notif-panel-body">
-          <div class="notification-status-group">
-            <div>
-              <strong id="notificationStatusText">ระบบแจ้งเตือนหน้าจอ (Screen Notification & Sound)</strong>
-              <p id="notificationStatusSub" class="notification-sub">คลิกเพื่อเปิดรับการแจ้งเตือนบนหน้าจอ (OS / Browser) และเสียงเตือนเมื่อพบความเสี่ยง</p>
-            </div>
-          </div>
-          <div class="notification-action-group">
-            <button type="button" class="notif-btn" id="toggleNotifPermissionBtn">🔔 เปิดแจ้งเตือนหน้าจอ</button>
-            <button type="button" class="notif-btn active" id="toggleSoundBtn" aria-pressed="true">🔊 เปิดเสียงเตือน</button>
-            <button type="button" class="notif-btn ghost" id="testAlertBtn">⚡ ทดสอบทันที</button>
-            <button type="button" class="notif-btn ghost" id="testDelayAlertBtn">⏳ ทดสอบหลังพับจอ (3 วิ)</button>
-          </div>
-        </div>
-      </details>
-    </section>
 
     <div class="workspace">
       <section class="panel form-panel" aria-labelledby="formTitle">
@@ -446,6 +435,6 @@
     </section>
   </div>
 
-  <script src="app.js?v=20260917-v1"></script>
+  <script src="app.js?v=20260917-v2"></script>
 </body>
 </html>
